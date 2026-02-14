@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism Effects */
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20;
+  }
+
+  .glass-dark {
+    @apply bg-slate-900/80 backdrop-blur-md border border-white/10;
+  }
+
+  /* Premium Card Styles */
+  .card-premium {
+    @apply bg-white rounded-2xl shadow-premium border border-slate-200/50;
+  }
+
+  .card-premium-hover {
+    @apply bg-white rounded-2xl shadow-premium border border-slate-200/50 transition-all duration-200 hover:shadow-premium-lg hover:scale-[1.02];
+  }
+
+  /* Custom Scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-slate-100 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full hover:bg-slate-400;
+  }
+
+  /* Skeleton Loader */
+  .skeleton {
+    @apply bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 bg-[length:200%_100%] animate-shimmer rounded;
+  }
+
+  /* Focus States */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+
+  /* Text Gradient */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-blue-500 bg-clip-text text-transparent;
+  }
+}
+
+/* Floating Label Animation */
+.floating-label-group {
+  @apply relative;
+}
+
+.floating-label-input {
+  @apply w-full px-4 pt-6 pb-2 text-sm border border-slate-300 rounded-xl focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-200;
+}
+
+.floating-label {
+  @apply absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm pointer-events-none transition-all duration-200;
+}
+
+.floating-label-input:focus ~ .floating-label,
+.floating-label-input:not(:placeholder-shown) ~ .floating-label {
+  @apply top-2 translate-y-0 text-xs text-primary-600;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  @apply fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40;
+}
+
+/* Slide-over Panel */
+.slide-over {
+  @apply fixed right-0 top-0 h-full w-full max-w-2xl bg-white shadow-2xl z-50;
+}
