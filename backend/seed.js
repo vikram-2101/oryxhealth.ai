@@ -35,7 +35,7 @@ const seedData = async () => {
     const customers = await Customer.create([
       {
         name: 'MedVita Health Systems',
-        logo: 'https://ui-avatars.com/api/?name=MH&background=3b82f6&color=fff',
+        logo: '🏥',
         banner: '',
         contactPerson: {
           name: 'Sarah Johnson',
@@ -46,7 +46,7 @@ const seedData = async () => {
       },
       {
         name: 'CarePoint Networks',
-        logo: 'https://ui-avatars.com/api/?name=CP&background=10b981&color=fff',
+        logo: '🩺',
         banner: '',
         contactPerson: {
           name: 'James Wilson',
@@ -63,7 +63,7 @@ const seedData = async () => {
     const institutions = await Institution.create([
       {
         name: 'City General Hospital',
-        logo: 'https://ui-avatars.com/api/?name=CG&background=8b5cf6&color=fff',
+        logo: '🏗️',
         banner: '',
         contactPerson: {
           name: 'Emily Davis',
@@ -75,7 +75,7 @@ const seedData = async () => {
       },
       {
         name: 'Riverside Community Clinic',
-        logo: 'https://ui-avatars.com/api/?name=RC&background=f59e0b&color=fff',
+        logo: '🌊',
         banner: '',
         contactPerson: {
           name: 'Kelly Brown',
@@ -87,7 +87,7 @@ const seedData = async () => {
       },
       {
         name: 'Sunrise Wellness Center',
-        logo: 'https://ui-avatars.com/api/?name=SW&background=ec4899&color=fff',
+        logo: '🌅',
         banner: '',
         contactPerson: {
           name: 'Isaac Martinez',
@@ -99,7 +99,7 @@ const seedData = async () => {
       },
       {
         name: 'Horizon Research Lab',
-        logo: 'https://ui-avatars.com/api/?name=HR&background=6366f1&color=fff',
+        logo: '🧬',
         banner: '',
         contactPerson: {
           name: 'Pavel Rodriguez',

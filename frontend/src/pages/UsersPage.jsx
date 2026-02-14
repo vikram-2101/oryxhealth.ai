@@ -1,69 +1,119 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Users, Mail, Phone, Stethoscope, UserCog, ClipboardList } from 'lucide-react';
+import { Plus, Stethoscope, HeartHandshake, UserCog, Edit, Trash2 } from 'lucide-react';
 import { userService, institutionService } from '../services';
-import { useToast } from '../context/ToastContext';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { EmptyState } from '../components/ui/EmptyState';
 import { SearchBar } from '../components/ui/SearchBar';
 import { Pagination } from '../components/ui/Pagination';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { EmptyState } from '../components/ui/EmptyState';
 import { StatusToggleSwitch } from '../components/ui/StatusToggleSwitch';
+import { FormModal } from '../components/ui/FormModal';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { UserForm } from '../components/forms/UserForm';
+
+const roleIcons = {
+  Doctor: Stethoscope,
+  'Health Worker': HeartHandshake,
+  Coordinator: UserCog,
+};
+
+const roleColors = {
+  Doctor: 'bg-blue-100 text-blue-700',
+  'Health Worker': 'bg-emerald-100 text-emerald-700',
+  Coordinator: 'bg-amber-100 text-amber-700',
+};
 
 export const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [institutions, setInstitutions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [search, setSearch] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedInstitution, setSelectedInstitution] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const { error, success } = useToast();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const itemsPerPage = 10;
 
   useEffect(() => {
-    loadInstitutions();
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    loadUsers();
-  }, [currentPage, searchTerm, selectedRole, selectedInstitution]);
-
-  const loadInstitutions = async () => {
-    try {
-      const response = await institutionService.getAll({ limit: 100 });
-      setInstitutions(response.data.institutions);
-    } catch (err) {
-      console.error('Failed to load institutions');
-    }
-  };
-
-  const loadUsers = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await userService.getAll({
-        page: currentPage,
-        search: searchTerm,
-        role: selectedRole,
-        institution: selectedInstitution,
-      });
-      setUsers(response.data.users);
-      setTotalPages(response.data.pages);
-    } catch (err) {
-      error('Failed to load users');
+      const [usersRes, institutionsRes] = await Promise.all([
+        userService.getAll(),
+        institutionService.getAll(),
+      ]);
+      setUsers(usersRes.data.users || usersRes.data);
+      setInstitutions(institutionsRes.data.institutions || institutionsRes.data);
+    } catch (error) {
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStatusToggle = async (id, currentStatus) => {
+  const handleAdd = () => {
+    setSelectedUser(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (user) => {
+    setSelectedUser(user);
+    setIsFormOpen(true);
+  };
+
+  const handleFormSubmit = async (formData) => {
     try {
-      await userService.toggleStatus(id);
-      success(`User ${currentStatus === 'active' ? 'deactivated' : 'activated'}`);
-      loadUsers();
-    } catch (err) {
-      error('Failed to update status');
+      if (selectedUser) {
+        await userService.update(selectedUser._id, formData);
+      } else {
+        await userService.create(formData);
+      }
+      setIsFormOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error saving user:', error);
+      throw error;
     }
   };
+
+  const handleDelete = async (id) => {
+    try {
+      await userService.delete(id);
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    }
+  };
+
+  const handleStatusToggle = async (id) => {
+    try {
+      await userService.toggleStatus(id);
+      fetchData();
+    } catch (error) {
+      console.error('Error toggling status:', error);
+    }
+  };
+
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(search.toLowerCase()) ||
+      user.email.toLowerCase().includes(search.toLowerCase());
+    const matchesRole = !selectedRole || user.role === selectedRole;
+    const matchesInstitution =
+      !selectedInstitution || user.institution?._id === selectedInstitution;
+    return matchesSearch && matchesRole && matchesInstitution;
+  });
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const getInitials = (name) => {
     return name
@@ -74,32 +124,6 @@ export const UsersPage = () => {
       .slice(0, 2);
   };
 
-  const getRoleIcon = (role) => {
-    switch (role) {
-      case 'Doctor':
-        return <Stethoscope className="w-4 h-4" />;
-      case 'Health Worker':
-        return <UserCog className="w-4 h-4" />;
-      case 'Coordinator':
-        return <ClipboardList className="w-4 h-4" />;
-      default:
-        return <Users className="w-4 h-4" />;
-    }
-  };
-
-  const getRoleBadgeColor = (role) => {
-    switch (role) {
-      case 'Doctor':
-        return 'bg-blue-100 text-blue-700';
-      case 'Health Worker':
-        return 'bg-emerald-100 text-emerald-700';
-      case 'Coordinator':
-        return 'bg-amber-100 text-amber-700';
-      default:
-        return 'bg-slate-100 text-slate-700';
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -107,19 +131,15 @@ export const UsersPage = () => {
           <h1 className="text-3xl font-bold text-slate-900">Users</h1>
           <p className="text-slate-600 mt-1">{users?.length || 0} registered users</p>
         </div>
-        <button className="btn-primary flex items-center gap-2">
+        <button onClick={handleAdd} className="btn-primary flex items-center gap-2">
           <Plus className="w-5 h-5" />
           Add User
         </button>
       </div>
 
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <SearchBar
-            value={searchTerm}
-            onChange={setSearchTerm}
-            placeholder="Search users..."
-          />
+      <div className="flex gap-4 flex-wrap">
+        <div className="flex-1 min-w-[200px]">
+          <SearchBar value={search} onChange={setSearch} placeholder="Search users..." />
         </div>
         <select
           value={selectedRole}
@@ -151,7 +171,7 @@ export const UsersPage = () => {
         </div>
       ) : !users || users.length === 0 ? (
         <EmptyState
-          icon={Users}
+          icon={UserCog}
           title="No users found"
           description="Get started by adding your first user"
         />
@@ -162,77 +182,96 @@ export const UsersPage = () => {
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       User
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       Role
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       Institution
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       Contact
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       Reg. No.
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       Status
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {users.map((user, index) => (
-                    <motion.tr
-                      key={user._id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.03 }}
-                      className="hover:bg-slate-50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center font-semibold text-sm">
-                            {getInitials(user.name)}
+                <tbody className="bg-white divide-y divide-slate-200">
+                  {paginatedUsers.map((user) => {
+                    const RoleIcon = roleIcons[user.role];
+                    return (
+                      <motion.tr
+                        key={user._id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center font-bold text-primary-700">
+                              {getInitials(user.name)}
+                            </div>
+                            <div>
+                              <div className="font-medium text-slate-900">{user.name}</div>
+                              <div className="text-sm text-slate-500">{user.email}</div>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-semibold text-slate-900">{user.name}</p>
-                            <p className="text-sm text-slate-500">{user.email}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium ${
+                              roleColors[user.role]
+                            }`}
+                          >
+                            <RoleIcon className="w-4 h-4" />
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600">
+                          {user.institution?.name}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600">{user.phone}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600 font-mono">
+                          {user.role === 'Doctor' ? user.registrationNumber || '—' : '—'}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center">
+                            <StatusToggleSwitch
+                              checked={user.status === 'active'}
+                              onChange={() => handleStatusToggle(user._id)}
+                            />
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(
-                            user.role
-                          )}`}
-                        >
-                          {getRoleIcon(user.role)}
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-slate-900">
-                          {user.institution?.name || 'N/A'}
-                        </p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-slate-600">{user.contactNumber}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-slate-600 font-mono">
-                          {user.registrationNumber || '—'}
-                        </p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <StatusToggleSwitch
-                          checked={user.status === 'active'}
-                          onChange={() => handleStatusToggle(user._id, user.status)}
-                        />
-                      </td>
-                    </motion.tr>
-                  ))}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleEdit(user)}
+                              className="p-2 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors"
+                              title="Edit"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(user)}
+                              className="p-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -247,6 +286,29 @@ export const UsersPage = () => {
           )}
         </>
       )}
+
+      {/* Form Modal */}
+      <FormModal
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        title={selectedUser ? 'Edit User' : 'Add New User'}
+        size="lg"
+      >
+        <UserForm
+          user={selectedUser}
+          onSubmit={handleFormSubmit}
+          onCancel={() => setIsFormOpen(false)}
+        />
+      </FormModal>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={() => handleDelete(deleteConfirm._id)}
+        title="Delete User"
+        message={`Are you sure you want to delete "${deleteConfirm?.name}"? This action cannot be undone.`}
+      />
     </div>
   );
 };

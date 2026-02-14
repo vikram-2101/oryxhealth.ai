@@ -1,47 +1,84 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Building2, Mail, Phone, MapPin } from 'lucide-react';
+import { Plus, Mail, Phone, Building2, Edit, Trash2 } from 'lucide-react';
 import { customerService } from '../services';
-import { useToast } from '../context/ToastContext';
+import { SearchBar } from '../components/ui/SearchBar';
+import { Pagination } from '../components/ui/Pagination';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { SkeletonCard } from '../components/ui/SkeletonCard';
 import { EmptyState } from '../components/ui/EmptyState';
-import { SearchBar } from '../components/ui/SearchBar';
-import { Pagination } from '../components/ui/Pagination';
 import { StatusToggleSwitch } from '../components/ui/StatusToggleSwitch';
+import { FormModal } from '../components/ui/FormModal';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { CustomerForm } from '../components/forms/CustomerForm';
 
 export const CustomersPage = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const { error, success } = useToast();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const itemsPerPage = 8;
 
   useEffect(() => {
-    loadCustomers();
-  }, [currentPage, searchTerm]);
+    fetchCustomers();
+  }, []);
 
-  const loadCustomers = async () => {
+  const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const response = await customerService.getAll({ page: currentPage, search: searchTerm });
-      setCustomers(response.data.customers);
-      setTotalPages(response.data.pages);
-    } catch (err) {
-      error('Failed to load customers');
+      const response = await customerService.getAll();
+      setCustomers(response.data.customers || response.data);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      setCustomers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStatusToggle = async (id, currentStatus) => {
+  const handleAdd = () => {
+    setSelectedCustomer(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (customer) => {
+    setSelectedCustomer(customer);
+    setIsFormOpen(true);
+  };
+
+  const handleFormSubmit = async (formData) => {
+    try {
+      if (selectedCustomer) {
+        await customerService.update(selectedCustomer._id, formData);
+      } else {
+        await customerService.create(formData);
+      }
+      setIsFormOpen(false);
+      fetchCustomers();
+    } catch (error) {
+      console.error('Error saving customer:', error);
+      throw error;
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await customerService.delete(id);
+      fetchCustomers();
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+    }
+  };
+
+  const handleStatusToggle = async (id) => {
     try {
       await customerService.toggleStatus(id);
-      success(`Customer ${currentStatus === 'active' ? 'deactivated' : 'activated'}`);
-      loadCustomers();
-    } catch (err) {
-      error('Failed to update status');
+      fetchCustomers();
+    } catch (error) {
+      console.error('Error toggling status:', error);
     }
   };
 
@@ -66,6 +103,19 @@ export const CustomersPage = () => {
     return colors[index % colors.length];
   };
 
+  // Filter and paginate
+  const filteredCustomers = customers.filter(
+    (c) =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.contactPerson?.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const paginatedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -73,15 +123,15 @@ export const CustomersPage = () => {
           <h1 className="text-3xl font-bold text-slate-900">Customers</h1>
           <p className="text-slate-600 mt-1">{customers?.length || 0} customer accounts</p>
         </div>
-        <button className="btn-primary flex items-center gap-2">
+        <button onClick={handleAdd} className="btn-primary flex items-center gap-2">
           <Plus className="w-5 h-5" />
           Add Customer
         </button>
       </div>
 
       <SearchBar
-        value={searchTerm}
-        onChange={setSearchTerm}
+        value={search}
+        onChange={setSearch}
         placeholder="Search customers..."
       />
 
@@ -100,26 +150,24 @@ export const CustomersPage = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {customers.map((customer, index) => (
+            {paginatedCustomers.map((customer, index) => (
               <motion.div
                 key={customer._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="card-premium p-6 space-y-4"
+                className="card-premium p-6 space-y-4 group"
               >
                 <div className="flex items-start justify-between">
-                  <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${getRandomColor(
-                      index
-                    )}`}
-                  >
-                    {getInitials(customer.name)}
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-2xl bg-primary-100">
+                    {customer.logo || getInitials(customer.name)}
                   </div>
-                  <StatusToggleSwitch
-                    checked={customer.status === 'active'}
-                    onChange={() => handleStatusToggle(customer._id, customer.status)}
-                  />
+                  <div className="flex items-center gap-2">
+                    <StatusToggleSwitch
+                      checked={customer.status === 'active'}
+                      onChange={() => handleStatusToggle(customer._id)}
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -129,11 +177,11 @@ export const CustomersPage = () => {
                   <div className="space-y-2 text-sm text-slate-600">
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4" />
-                      <span className="truncate">{customer.contactPerson.email}</span>
+                      <span className="truncate">{customer.contactPerson?.email}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="w-4 h-4" />
-                      <span>{customer.contactPerson.phone}</span>
+                      <span>{customer.contactPerson?.phone}</span>
                     </div>
                   </div>
                 </div>
@@ -152,8 +200,26 @@ export const CustomersPage = () => {
                         : 'bg-red-100 text-red-700'
                     }`}
                   >
-                    {customer.status.toUpperCase()}
+                    {customer.status?.toUpperCase()}
                   </span>
+                </div>
+
+                {/* Action buttons - show on hover */}
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => handleEdit(customer)}
+                    className="flex-1 px-3 py-2 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(customer)}
+                    className="flex-1 px-3 py-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </button>
                 </div>
               </motion.div>
             ))}
@@ -168,6 +234,28 @@ export const CustomersPage = () => {
           )}
         </>
       )}
+
+      {/* Form Modal */}
+      <FormModal
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        title={selectedCustomer ? 'Edit Customer' : 'Add New Customer'}
+      >
+        <CustomerForm
+          customer={selectedCustomer}
+          onSubmit={handleFormSubmit}
+          onCancel={() => setIsFormOpen(false)}
+        />
+      </FormModal>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={() => handleDelete(deleteConfirm._id)}
+        title="Delete Customer"
+        message={`Are you sure you want to delete "${deleteConfirm?.name}"? This action cannot be undone.`}
+      />
     </div>
   );
 };
