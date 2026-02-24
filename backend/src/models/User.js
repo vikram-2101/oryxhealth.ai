@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema(
   {
@@ -30,8 +30,8 @@ const userSchema = new mongoose.Schema(
       required: [true, "Email is required"],
       trim: true,
       lowercase: true,
-      unique: true,           // 🔥 Important for login
-      index: true,            // 🔥 Improves login performance
+      unique: true, // 🔥 Important for login
+      index: true, // 🔥 Improves login performance
     },
 
     institution: {
@@ -63,7 +63,7 @@ const userSchema = new mongoose.Schema(
       validate: {
         validator: function (v) {
           return /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>,.?\/\\|`~]).{8,}$/.test(
-            v
+            v,
           );
         },
         message:
@@ -87,7 +87,7 @@ const userSchema = new mongoose.Schema(
 
     refreshToken: {
       type: String,
-      select: false,  // security
+      select: false, // security
     },
 
     tokenVersion: {
@@ -97,7 +97,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 /* =========================================
@@ -135,12 +135,11 @@ userSchema.pre("findOneAndUpdate", function (next) {
   next();
 });
 
-
 // Compare password method
 userSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
 
 export default User;
