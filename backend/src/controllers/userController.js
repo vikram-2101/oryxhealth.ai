@@ -98,20 +98,43 @@ export const createUser = async (req, res, next) => {
 // @access  Private
 export const updateUser = async (req, res, next) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    }).populate('institution', 'name');
+    const user = await User.findById(req.params.id);
 
     if (!user) {
       res.status(404);
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
+
+    if (req.body.password === "") {
+      delete req.body.password;
+    }
+
+    const allowedFields = [
+      "name",
+      "role",
+      "address",
+      "phone",
+      "email",
+      "institution",
+      "registrationNumber",
+      "signatureImage",
+      "status",
+      "password"
+    ];
+
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        user[field] = req.body[field];
+      }
+    });
+
+    await user.save();
+    await user.populate("institution", "name");
 
     res.json({
       success: true,
       data: user,
-      message: 'User updated successfully',
+      message: "User updated successfully",
     });
   } catch (error) {
     next(error);

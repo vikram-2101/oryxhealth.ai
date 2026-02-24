@@ -18,6 +18,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
     role: user?.role || '',
     institution: user?.institution?._id || '',
     registrationNumber: user?.registrationNumber || '',
+    password: '',
   });
 
   const [institutions, setInstitutions] = useState([]);
@@ -72,6 +73,13 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
     // Doctor-specific validation
     if (formData.role === 'Doctor' && !formData.registrationNumber.trim()) {
       newErrors.registrationNumber = 'Registration number is required for doctors';
+    }
+
+    // Password validation
+    if (!user && !formData.password) {
+      newErrors.password = 'Password is required for new users';
+    } else if (formData.password && !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>,.?\/\\|`~]).{8,}$/.test(formData.password)) {
+      newErrors.password = 'Password must be at least 8 chars, including letters, numbers, and special characters';
     }
 
     setErrors(newErrors);
@@ -165,6 +173,19 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
           placeholder="e.g., +1 555-1001"
         />
 
+        <FormInput
+          label={user ? "New Password (leave blank to keep current)" : "Password"}
+          name="password"
+          type="password"
+          value={formData.password}
+          onChange={handleChange}
+          error={errors.password}
+          required={!user}
+          placeholder="Min. 8 chars, 1 letter, 1 number, 1 special char"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormSelect
           label="Role"
           name="role"

@@ -1,21 +1,21 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Layers, Edit, Trash2 } from 'lucide-react';
-import { panelService } from '../services';
-import { SearchBar } from '../components/ui/SearchBar';
-import { Pagination } from '../components/ui/Pagination';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { SkeletonCard } from '../components/ui/SkeletonCard';
-import { EmptyState } from '../components/ui/EmptyState';
-import { StatusToggleSwitch } from '../components/ui/StatusToggleSwitch';
-import { FormModal } from '../components/ui/FormModal';
-import { ConfirmDialog } from '../components/ui/ConfirmDialog';
-import { PanelForm } from '../components/forms/PanelForm';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Plus, Layers, Edit, Trash2 } from "lucide-react";
+import { panelService } from "../services";
+import { SearchBar } from "../components/ui/SearchBar";
+import { Pagination } from "../components/ui/Pagination";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { SkeletonCard } from "../components/ui/SkeletonCard";
+import { EmptyState } from "../components/ui/EmptyState";
+import { StatusToggleSwitch } from "../components/ui/StatusToggleSwitch";
+import { FormModal } from "../components/ui/FormModal";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { PanelForm } from "../components/forms/PanelForm";
 
 export const PanelsPage = () => {
   const [panels, setPanels] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedPanel, setSelectedPanel] = useState(null);
@@ -26,13 +26,22 @@ export const PanelsPage = () => {
     fetchPanels();
   }, []);
 
+  const updatePanel = async (id) => {
+    try {
+      const panel = await panelService.getById(id);
+      setPanels();
+    } catch (error) {
+      console.log("Error fetching one single panel", error);
+    }
+  };
+
   const fetchPanels = async () => {
     try {
       setLoading(true);
       const response = await panelService.getAll();
       setPanels(response.data.panels || response.data);
     } catch (error) {
-      console.error('Error fetching panels:', error);
+      console.error("Error fetching panels:", error);
     } finally {
       setLoading(false);
     }
@@ -58,7 +67,7 @@ export const PanelsPage = () => {
       setIsFormOpen(false);
       fetchPanels();
     } catch (error) {
-      console.error('Error saving panel:', error);
+      console.error("Error saving panel:", error);
       throw error;
     }
   };
@@ -68,7 +77,7 @@ export const PanelsPage = () => {
       await panelService.delete(id);
       fetchPanels();
     } catch (error) {
-      console.error('Error deleting panel:', error);
+      console.error("Error deleting panel:", error);
     }
   };
 
@@ -77,27 +86,27 @@ export const PanelsPage = () => {
       await panelService.toggleStatus(id);
       fetchPanels();
     } catch (error) {
-      console.error('Error toggling status:', error);
+      console.error("Error toggling status:", error);
     }
   };
 
   const getInitials = (name) => {
     return name
-      .split(' ')
+      .split(" ")
       .map((n) => n[0])
-      .join('')
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
   const filteredPanels = panels.filter((panel) =>
-    panel.name.toLowerCase().includes(search.toLowerCase())
+    panel.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   const totalPages = Math.ceil(filteredPanels.length / itemsPerPage);
   const paginatedPanels = filteredPanels.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   return (
@@ -105,15 +114,24 @@ export const PanelsPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Panels</h1>
-          <p className="text-slate-600 mt-1">{panels?.length || 0} active panels</p>
+          <p className="text-slate-600 mt-1">
+            {panels?.length || 0} active panels
+          </p>
         </div>
-        <button onClick={handleAdd} className="btn-primary flex items-center gap-2">
+        <button
+          onClick={handleAdd}
+          className="btn-primary flex items-center gap-2"
+        >
           <Plus className="w-5 h-5" />
           Add Panel
         </button>
       </div>
 
-      <SearchBar value={search} onChange={setSearch} placeholder="Search panels..." />
+      <SearchBar
+        value={search}
+        onChange={setSearch}
+        placeholder="Search panels..."
+      />
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -139,9 +157,11 @@ export const PanelsPage = () => {
                 className="card-premium p-6 space-y-4 group"
               >
                 <div className="flex items-start justify-between">
-                  <h3 className="font-semibold text-slate-900 text-lg">{panel.name}</h3>
+                  <h3 className="font-semibold text-slate-900 text-lg">
+                    {panel.name}
+                  </h3>
                   <StatusToggleSwitch
-                    checked={panel.status === 'active'}
+                    checked={panel.status === "active"}
                     onChange={() => handleStatusToggle(panel._id)}
                   />
                 </div>
@@ -165,13 +185,14 @@ export const PanelsPage = () => {
 
                 <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
                   <span className="text-sm text-slate-600">
-                    {panel.members?.length || 0} member{panel.members?.length !== 1 ? 's' : ''}
+                    {panel.members?.length || 0} member
+                    {panel.members?.length !== 1 ? "s" : ""}
                   </span>
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      panel.status === 'active'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-red-100 text-red-700'
+                      panel.status === "active"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-red-100 text-red-700"
                     }`}
                   >
                     {panel.status?.toUpperCase()}
@@ -213,7 +234,7 @@ export const PanelsPage = () => {
       <FormModal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
-        title={selectedPanel ? 'Edit Panel' : 'Create New Panel'}
+        title={selectedPanel ? "Edit Panel" : "Create New Panel"}
         size="lg"
       >
         <PanelForm
