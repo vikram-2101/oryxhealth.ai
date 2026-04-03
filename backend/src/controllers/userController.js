@@ -80,6 +80,15 @@ export const getUser = async (req, res, next) => {
 // @access  Private
 export const createUser = async (req, res, next) => {
   try {
+    const { email } = req.body;
+
+    // Check if user already exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      res.status(400);
+      throw new Error('A user with this email already exists');
+    }
+
     const user = await User.create(req.body);
     await user.populate('institution', 'name');
 
@@ -89,6 +98,7 @@ export const createUser = async (req, res, next) => {
       message: 'User created successfully',
     });
   } catch (error) {
+    console.error('❌ Error in createUser:', error);
     next(error);
   }
 };

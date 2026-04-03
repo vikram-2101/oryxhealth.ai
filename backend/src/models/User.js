@@ -115,23 +115,10 @@ userSchema.pre("save", async function (next) {
    DOCTOR VALIDATION
 ========================================= */
 
-userSchema.pre("save", function (next) {
+userSchema.pre("validate", function (next) {
   if (this.role === "Doctor" && !this.registrationNumber) {
     return next(new Error("Registration number is required for Doctors"));
   }
-  next();
-});
-
-userSchema.pre("findOneAndUpdate", function (next) {
-  const update = this.getUpdate();
-  const role = update.role || update.$set?.role;
-  const registrationNumber =
-    update.registrationNumber || update.$set?.registrationNumber;
-
-  if (role === "Doctor" && !registrationNumber) {
-    return next(new Error("Registration number is required for Doctors"));
-  }
-
   next();
 });
 

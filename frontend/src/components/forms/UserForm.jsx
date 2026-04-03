@@ -25,6 +25,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingInstitutions, setLoadingInstitutions] = useState(true);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     fetchInstitutions();
@@ -78,7 +79,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
     // Password validation
     if (!user && !formData.password) {
       newErrors.password = 'Password is required for new users';
-    } else if (formData.password && !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>,.?\/\\|`~]).{8,}$/.test(formData.password)) {
+    } else if (formData.password && !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>‎,.?\/\\|`~]).{8,}$/.test(formData.password)) {
       newErrors.password = 'Password must be at least 8 chars, including letters, numbers, and special characters';
     }
 
@@ -88,6 +89,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError('');
     
     if (!validateForm()) return;
 
@@ -101,6 +103,11 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
       await onSubmit(submitData);
     } catch (error) {
       console.error('Form submission error:', error);
+      setSubmitError(
+        error.response?.data?.message || 
+        error.message || 
+        'An error occurred while saving the user. Please try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -108,6 +115,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    setSubmitError('');
     
     setFormData((prev) => ({
       ...prev,
@@ -138,6 +146,16 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {submitError && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm font-medium"
+        >
+          {submitError}
+        </motion.div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput
           label="Full Name"

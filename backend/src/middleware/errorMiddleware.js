@@ -1,9 +1,24 @@
 export const errorHandler = (err, req, res, next) => {
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  let message = err.message;
+
+  // Mongoose validation error
+  if (err.name === 'ValidationError') {
+    statusCode = 400;
+    message = Object.values(err.errors)
+      .map((val) => val.message)
+      .join(', ');
+  }
+
+  // Mongoose cast error (invalid ID)
+  if (err.name === 'CastError') {
+    statusCode = 400;
+    message = 'Resource not found';
+  }
   
   res.status(statusCode).json({
     success: false,
-    message: err.message || 'Server Error',
+    message: message || 'Server Error',
     error: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 };
