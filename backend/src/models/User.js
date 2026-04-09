@@ -14,7 +14,10 @@ const userSchema = new mongoose.Schema(
       required: [true, "Role is required"],
       enum: ["Doctor", "Health Worker", "Coordinator"],
     },
-
+    sex: {
+      type: String,
+      enum: ["Male", "Female", "Other"],
+    },
     address: {
       type: String,
       trim: true,
@@ -23,6 +26,8 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
+      unique: true,
+      index: true,
     },
 
     email: {
@@ -30,8 +35,8 @@ const userSchema = new mongoose.Schema(
       required: [true, "Email is required"],
       trim: true,
       lowercase: true,
-      unique: true, // 🔥 Important for login
-      index: true, // 🔥 Improves login performance
+      unique: true,
+      index: true,
     },
 
     institution: {
@@ -39,12 +44,28 @@ const userSchema = new mongoose.Schema(
       ref: "Institution",
       required: [true, "Institution is required"],
     },
-
+    institutionAccess: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Institution",
+      },
+    ],
     registrationNumber: {
       type: String,
       trim: true,
     },
-
+    specialization: {
+      type: String,
+      trim: true,
+    },
+    designation: {
+      type: String,
+      trim: true,
+    },
+    photo: {
+      type: String,
+      default: "",
+    },
     signatureImage: {
       type: String,
       default: "",
@@ -71,10 +92,6 @@ const userSchema = new mongoose.Schema(
       },
       select: false,
     },
-
-    /* =========================================
-       🔐 AUTH FIELDS (For Web App JWT)
-    ========================================= */
 
     loginAttempts: {
       type: Number,
@@ -116,8 +133,10 @@ userSchema.pre("save", async function (next) {
 ========================================= */
 
 userSchema.pre("validate", function (next) {
-  if (this.role === "Doctor" && !this.registrationNumber) {
-    return next(new Error("Registration number is required for Doctors"));
+  if (this.role === "Doctor") {
+    if (!this.registrationNumber) return next(new Error("Registration number is required for Doctors"));
+    if (!this.specialization) return next(new Error("Specialization is required for Doctors"));
+    if (!this.designation) return next(new Error("Designation is required for Doctors"));
   }
   next();
 });

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 
 // @desc    Get all users
@@ -39,6 +40,7 @@ export const getUsers = async (req, res, next) => {
     res.json({
       success: true,
       data: users,
+      users: users,
       pagination: {
         page,
         limit,
@@ -89,7 +91,9 @@ export const createUser = async (req, res, next) => {
       throw new Error('A user with this email already exists');
     }
 
-    const user = await User.create(req.body);
+    const userData = { ...req.body };
+
+    const user = await User.create(userData);
     await user.populate('institution', 'name');
 
     res.status(201).json({
@@ -108,6 +112,12 @@ export const createUser = async (req, res, next) => {
 // @access  Private
 export const updateUser = async (req, res, next) => {
   try {
+    console.log('📦 Update User Request:', {
+      id: req.params.id,
+      body: req.body,
+      file: req.file ? req.file.filename : 'no-file'
+    });
+    
     const user = await User.findById(req.params.id);
 
     if (!user) {
@@ -115,35 +125,57 @@ export const updateUser = async (req, res, next) => {
       throw new Error("User not found");
     }
 
-    if (req.body.password === "") {
-      delete req.body.password;
+    const userData = { ...req.body };
+
+    if (userData.password === "") {
+      delete userData.password;
     }
 
+    const updateData = {};
     const allowedFields = [
       "name",
       "role",
+      "sex",
       "address",
       "phone",
       "email",
       "institution",
+      "institutionAccess",
       "registrationNumber",
+      "specialization",
+      "designation",
+      "photo",
       "signatureImage",
       "status",
       "password"
     ];
 
+    console.log('🔍 Validating ID:', req.params.id, '| Is Valid:', mongoose.Types.ObjectId.isValid(req.params.id));
+
     allowedFields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        user[field] = req.body[field];
+      if (userData[field] !== undefined) {
+        // Prevent CastError by not allowing empty strings for ObjectId fields
+        if ((field === 'institution' || field === 'institutionAccess') && userData[field] === '') {
+          return;
+        }
+        updateData[field] = userData[field];
       }
     });
 
-    await user.save();
-    await user.populate("institution", "name");
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).populate("institution", "name");
+
+    if (!updatedUser) {
+      res.status(404);
+      throw new Error("User not found after update");
+    }
 
     res.json({
       success: true,
-      data: user,
+      data: updatedUser,
       message: "User updated successfully",
     });
   } catch (error) {

@@ -12,11 +12,17 @@ import userRoutes from './routes/userRoutes.js';
 import panelRoutes from './routes/panelRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 // Load environment variables
 dotenv.config();
 
 // Connect to database
 connectDB();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -24,6 +30,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(path.dirname(__dirname), 'uploads')));
 
 // Routes
 app.get('/', (req, res) => {

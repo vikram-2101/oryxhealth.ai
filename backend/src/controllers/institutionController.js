@@ -41,7 +41,7 @@ export const getInstitutions = async (req, res, next) => {
         });
         return {
           ...institution.toObject(),
-          userCount,
+          usersCount: userCount,
         };
       })
     );
@@ -49,6 +49,7 @@ export const getInstitutions = async (req, res, next) => {
     res.json({
       success: true,
       data: institutionsWithCounts,
+      institutions: institutionsWithCounts,
       pagination: {
         page,
         limit,

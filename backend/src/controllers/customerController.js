@@ -36,7 +36,7 @@ export const getCustomers = async (req, res, next) => {
         });
         return {
           ...customer.toObject(),
-          institutionCount,
+          institutionsCount: institutionCount,
         };
       })
     );
@@ -44,6 +44,7 @@ export const getCustomers = async (req, res, next) => {
     res.json({
       success: true,
       data: customersWithCounts,
+      customers: customersWithCounts,
       pagination: {
         page,
         limit,

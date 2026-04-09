@@ -28,6 +28,7 @@ export const getPanels = async (req, res, next) => {
     res.json({
       success: true,
       data: panels,
+      panels: panels,
       pagination: {
         page,
         limit,

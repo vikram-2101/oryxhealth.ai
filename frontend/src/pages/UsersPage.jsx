@@ -217,8 +217,12 @@ export const UsersPage = () => {
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center font-bold text-primary-700">
-                              {getInitials(user.name)}
+                            <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center font-bold text-primary-700 overflow-hidden shadow-sm border border-slate-200">
+                              {user.photo ? (
+                                <img src={user.photo} alt={user.name} className="w-full h-full object-cover" />
+                              ) : (
+                                getInitials(user.name)
+                              )}
                             </div>
                             <div>
                               <div className="font-medium text-slate-900">{user.name}</div>

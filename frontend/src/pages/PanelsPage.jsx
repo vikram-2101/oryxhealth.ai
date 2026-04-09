@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Layers, Edit, Trash2 } from "lucide-react";
+import { Plus, Layers, Edit, Trash2, Mail, Briefcase, User as UserIcon } from "lucide-react";
 import { panelService } from "../services";
 import { SearchBar } from "../components/ui/SearchBar";
 import { Pagination } from "../components/ui/Pagination";
@@ -19,21 +19,13 @@ export const PanelsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedPanel, setSelectedPanel] = useState(null);
+  const [viewPanelMembers, setViewPanelMembers] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const itemsPerPage = 9;
 
   useEffect(() => {
     fetchPanels();
   }, []);
-
-  const updatePanel = async (id) => {
-    try {
-      const panel = await panelService.getById(id);
-      setPanels();
-    } catch (error) {
-      console.log("Error fetching one single panel", error);
-    }
-  };
 
   const fetchPanels = async () => {
     try {
@@ -91,6 +83,7 @@ export const PanelsPage = () => {
   };
 
   const getInitials = (name) => {
+    if (!name) return "??";
     return name
       .split(" ")
       .map((n) => n[0])
@@ -154,20 +147,23 @@ export const PanelsPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="card-premium p-6 space-y-4 group"
+                onClick={() => setViewPanelMembers(panel)}
+                className="card-premium p-6 space-y-4 group cursor-pointer hover:border-primary-300 transition-all border-2 border-transparent"
               >
                 <div className="flex items-start justify-between">
                   <h3 className="font-semibold text-slate-900 text-lg">
                     {panel.name}
                   </h3>
-                  <StatusToggleSwitch
-                    checked={panel.status === "active"}
-                    onChange={() => handleStatusToggle(panel._id)}
-                  />
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <StatusToggleSwitch
+                      checked={panel.status === "active"}
+                      onChange={() => handleStatusToggle(panel._id)}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center -space-x-2">
-                  {panel.members?.slice(0, 5).map((member) => (
+                  {panel.users?.slice(0, 5).map((member) => (
                     <div
                       key={member._id}
                       className="w-10 h-10 rounded-full bg-primary-100 border-2 border-white flex items-center justify-center font-bold text-primary-700 text-sm"
@@ -176,17 +172,17 @@ export const PanelsPage = () => {
                       {getInitials(member.name)}
                     </div>
                   ))}
-                  {panel.members?.length > 5 && (
+                  {panel.users?.length > 5 && (
                     <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center font-medium text-slate-600 text-xs">
-                      +{panel.members.length - 5}
+                      +{panel.users.length - 5}
                     </div>
                   )}
                 </div>
 
                 <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
                   <span className="text-sm text-slate-600">
-                    {panel.members?.length || 0} member
-                    {panel.members?.length !== 1 ? "s" : ""}
+                    {panel.users?.length || 0} member
+                    {panel.users?.length !== 1 ? "s" : ""}
                   </span>
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -200,7 +196,7 @@ export const PanelsPage = () => {
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity pt-2" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => handleEdit(panel)}
                     className="flex-1 px-3 py-2 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
@@ -229,6 +225,68 @@ export const PanelsPage = () => {
           )}
         </>
       )}
+
+      {/* View Members Modal */}
+      <FormModal
+        isOpen={!!viewPanelMembers}
+        onClose={() => setViewPanelMembers(null)}
+        title={`Members: ${viewPanelMembers?.name}`}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-2">
+            {viewPanelMembers?.users?.map((member) => (
+              <div 
+                key={member._id} 
+                className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all group"
+              >
+                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg">
+                  {getInitials(member.name)}
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 group-hover:text-primary-600 transition-colors">
+                    {member.name}
+                  </h4>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                    <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                      <Mail className="w-3.5 h-3.5" />
+                      {member.email}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                      <Briefcase className="w-3.5 h-3.5" />
+                      {member.role}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <span className="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-semibold text-slate-600">
+                    ID: {member._id.slice(-6)}
+                  </span>
+                  {member.role === 'Doctor' && (
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100">
+                      SPECIALIST
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+            {(!viewPanelMembers?.users || viewPanelMembers.users.length === 0) && (
+              <div className="text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                <UserIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <p className="text-slate-500">No members found in this panel.</p>
+              </div>
+            )}
+          </div>
+          <div className="pt-4 flex justify-end">
+            <button
+              onClick={() => setViewPanelMembers(null)}
+              className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </FormModal>
 
       {/* Form Modal */}
       <FormModal

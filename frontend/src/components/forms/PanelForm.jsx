@@ -5,10 +5,10 @@ import { userService } from '../../services';
 export const PanelForm = ({ panel, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
     name: panel?.name || '',
-    members: panel?.members?.map((m) => m._id) || [],
+    users: panel?.users?.map((m) => m._id || m) || [],
   });
 
-  const [users, setUsers] = useState([]);
+  const [usersList, setUsersList] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -22,7 +22,7 @@ export const PanelForm = ({ panel, onSubmit, onCancel }) => {
       const response = await userService.getAll();
       const allUsers = response.data.users || response.data;
       // Only show active users
-      setUsers(allUsers.filter((u) => u.status === 'active'));
+      setUsersList(allUsers.filter((u) => u.status === 'active'));
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
@@ -37,8 +37,8 @@ export const PanelForm = ({ panel, onSubmit, onCancel }) => {
       newErrors.name = 'Panel name is required';
     }
 
-    if (formData.members.length === 0) {
-      newErrors.members = 'At least one member is required';
+    if (formData.users.length === 0) {
+      newErrors.users = 'At least one member is required';
     }
 
     setErrors(newErrors);
@@ -77,19 +77,19 @@ export const PanelForm = ({ panel, onSubmit, onCancel }) => {
 
   const handleMemberToggle = (userId) => {
     setFormData((prev) => {
-      const isSelected = prev.members.includes(userId);
+      const isSelected = prev.users.includes(userId);
       return {
         ...prev,
-        members: isSelected
-          ? prev.members.filter((id) => id !== userId)
-          : [...prev.members, userId],
+        users: isSelected
+          ? prev.users.filter((id) => id !== userId)
+          : [...prev.users, userId],
       };
     });
 
-    // Clear members error when user selects/deselects
+    // Clear users error when user selects/deselects
     setErrors((prev) => {
       const newErrors = { ...prev };
-      delete newErrors.members;
+      delete newErrors.users;
       return newErrors;
     });
   };
@@ -113,18 +113,18 @@ export const PanelForm = ({ panel, onSubmit, onCancel }) => {
         
         {loadingUsers ? (
           <div className="text-sm text-slate-500">Loading users...</div>
-        ) : users.length === 0 ? (
+        ) : usersList.length === 0 ? (
           <div className="text-sm text-slate-500">No active users available</div>
         ) : (
           <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-xl p-4 space-y-2">
-            {users.map((user) => (
+            {usersList.map((user) => (
               <label
                 key={user._id}
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
               >
                 <input
                   type="checkbox"
-                  checked={formData.members.includes(user._id)}
+                  checked={formData.users.includes(user._id)}
                   onChange={() => handleMemberToggle(user._id)}
                   className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                 />
@@ -142,11 +142,11 @@ export const PanelForm = ({ panel, onSubmit, onCancel }) => {
           </div>
         )}
         
-        {errors.members && <p className="text-sm text-red-600 mt-1">{errors.members}</p>}
+        {errors.users && <p className="text-sm text-red-600 mt-1">{errors.users}</p>}
         
-        {formData.members.length > 0 && (
+        {formData.users.length > 0 && (
           <p className="text-sm text-slate-600 mt-2">
-            {formData.members.length} member{formData.members.length !== 1 ? 's' : ''} selected
+            {formData.users.length} member{formData.users.length !== 1 ? 's' : ''} selected
           </p>
         )}
       </div>

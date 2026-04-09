@@ -4,6 +4,17 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+#files
+analyze-orphans.js
+debug_inst.js
+find-orphans.js
+fix_institution.js
+inspect-db.js
+test-api.js
+verify-inst.js
+seed.js
+
+
 # Production builds
 dist/
 build/
