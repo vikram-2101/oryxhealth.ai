@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { NavLink } from 'react-router-dom';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Building2,
@@ -9,17 +9,17 @@ import {
   Layers,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-react';
+} from "lucide-react";
 
 export const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Building2, label: 'Customers', path: '/customers' },
-    { icon: Building, label: 'Institutions', path: '/institutions' },
-    { icon: Users, label: 'Users', path: '/users' },
-    { icon: Layers, label: 'Panels', path: '/panels' },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+    { icon: Building2, label: "Customers", path: "/customers" },
+    { icon: Building, label: "Institutions", path: "/institutions" },
+    { icon: Users, label: "Users", path: "/users" },
+    { icon: Layers, label: "Panels", path: "/panels" },
   ];
 
   return (
@@ -29,7 +29,7 @@ export const Sidebar = () => {
     >
       <div className="p-6 flex items-center justify-between">
         {!collapsed && (
-          <h1 className="text-xl font-bold text-gradient">OxyHealth.ai</h1>
+          <h1 className="text-xl font-bold text-gradient">OryxTHealth.ai</h1>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
@@ -51,8 +51,8 @@ export const Sidebar = () => {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${
                 isActive
-                  ? 'bg-primary-600 text-white shadow-lg'
-                  : 'text-slate-600 hover:bg-white/50'
+                  ? "bg-primary-600 text-white shadow-lg"
+                  : "text-slate-600 hover:bg-white/50"
               }`
             }
           >
@@ -69,8 +69,12 @@ export const Sidebar = () => {
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 truncate">Super Admin</p>
-              <p className="text-xs text-slate-500 truncate">admin@oxyhealth.ai</p>
+              <p className="text-sm font-medium text-slate-900 truncate">
+                Super Admin
+              </p>
+              <p className="text-xs text-slate-500 truncate">
+                admin@oxyhealth.ai
+              </p>
             </div>
           )}
         </div>
