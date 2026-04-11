@@ -213,11 +213,10 @@ export const updateUser = async (req, res, next) => {
       }
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      { $set: updateData },
-      { new: true, runValidators: true },
-    ).populate("institution", "name");
+    // Use Object.assign and save() instead of findByIdAndUpdate to trigger 'pre-save' hooks (e.g., password hashing)
+    Object.assign(user, updateData);
+    const updatedUser = await user.save();
+    await updatedUser.populate("institution", "name");
 
     if (!updatedUser) {
       res.status(404);
