@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
-import User from '../models/User.js';
+import mongoose from "mongoose";
+import User from "../models/User.js";
 
 // @desc    Get all users
 // @route   GET /api/users
@@ -8,7 +8,7 @@ export const getUsers = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const search = req.query.search || '';
+    const search = req.query.search || "";
     const role = req.query.role;
     const institution = req.query.institution;
     const status = req.query.status;
@@ -16,8 +16,8 @@ export const getUsers = async (req, res, next) => {
     const query = {};
     if (search) {
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
       ];
     }
     if (role) {
@@ -32,7 +32,7 @@ export const getUsers = async (req, res, next) => {
 
     const total = await User.countDocuments(query);
     const users = await User.find(query)
-      .populate('institution', 'name')
+      .populate("institution", "name")
       .limit(limit)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
@@ -59,13 +59,13 @@ export const getUsers = async (req, res, next) => {
 export const getUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id).populate(
-      'institution',
-      'name'
+      "institution",
+      "name",
     );
 
     if (!user) {
       res.status(404);
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     res.json({
@@ -82,27 +82,45 @@ export const getUser = async (req, res, next) => {
 // @access  Private
 export const createUser = async (req, res, next) => {
   try {
-    const { email } = req.body;
+    const { email, institution } = req.body;
 
-    // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
       res.status(400);
-      throw new Error('A user with this email already exists');
+      throw new Error("A user with this email already exists");
     }
 
     const userData = { ...req.body };
 
-    const user = await User.create(userData);
-    await user.populate('institution', 'name');
+    // Parse access list
+    let accessList = [];
+    if (typeof userData.institutionAccess === "string") {
+      try {
+        accessList = JSON.parse(userData.institutionAccess);
+      } catch (e) {
+        accessList = userData.institutionAccess
+          .split(",")
+          .filter((id) => id.trim() !== "");
+      }
+    } else if (Array.isArray(userData.institutionAccess)) {
+      accessList = userData.institutionAccess;
+    }
 
-    res.status(201).json({
-      success: true,
-      data: user,
-      message: 'User created successfully',
-    });
+    // SENIOR FIX: Automatically add primary institution to access list
+    if (institution && !accessList.includes(institution)) {
+      accessList.push(institution);
+    }
+    userData.institutionAccess = accessList;
+
+    if (req.file) {
+      userData.signatureImage = `/uploads/${req.file.filename}`;
+    }
+
+    const user = await User.create(userData);
+    await user.populate("institution", "name");
+
+    res.status(201).json({ success: true, data: user });
   } catch (error) {
-    console.error('❌ Error in createUser:', error);
     next(error);
   }
 };
@@ -112,12 +130,12 @@ export const createUser = async (req, res, next) => {
 // @access  Private
 export const updateUser = async (req, res, next) => {
   try {
-    console.log('📦 Update User Request:', {
+    console.log(" Update User Request:", {
       id: req.params.id,
       body: req.body,
-      file: req.file ? req.file.filename : 'no-file'
+      file: req.file ? req.file.filename : "no-file",
     });
-    
+
     const user = await User.findById(req.params.id);
 
     if (!user) {
@@ -147,25 +165,58 @@ export const updateUser = async (req, res, next) => {
       "photo",
       "signatureImage",
       "status",
-      "password"
+      "password",
     ];
 
-    console.log('🔍 Validating ID:', req.params.id, '| Is Valid:', mongoose.Types.ObjectId.isValid(req.params.id));
+    console.log(
+      "Validating ID:",
+      req.params.id,
+      "| Is Valid:",
+      mongoose.Types.ObjectId.isValid(req.params.id),
+    );
 
     allowedFields.forEach((field) => {
       if (userData[field] !== undefined) {
         // Prevent CastError by not allowing empty strings for ObjectId fields
-        if ((field === 'institution' || field === 'institutionAccess') && userData[field] === '') {
+        if (
+          (field === "institution" || field === "institutionAccess") &&
+          userData[field] === ""
+        ) {
           return;
         }
         updateData[field] = userData[field];
       }
     });
 
+    // Ensure primary institution is in institutionAccess for consistency
+    const finalInstitution = updateData.institution || user.institution;
+    let finalAccess = updateData.institutionAccess || user.institutionAccess || [];
+
+    // Parse if string (support both JSON and CSV formats as per createUser logic)
+    if (typeof finalAccess === "string") {
+      try {
+        finalAccess = JSON.parse(finalAccess);
+      } catch (e) {
+        finalAccess = finalAccess
+          .split(",")
+          .filter((id) => id.trim() !== "");
+      }
+    }
+
+    if (finalInstitution) {
+      const instIdStr = finalInstitution.toString();
+      const accessStrs = finalAccess.map((id) => id.toString());
+
+      if (!accessStrs.includes(instIdStr)) {
+        finalAccess.push(instIdStr);
+        updateData.institutionAccess = finalAccess;
+      }
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       { $set: updateData },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     ).populate("institution", "name");
 
     if (!updatedUser) {
@@ -192,14 +243,14 @@ export const deleteUser = async (req, res, next) => {
 
     if (!user) {
       res.status(404);
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     await user.deleteOne();
 
     res.json({
       success: true,
-      message: 'User deleted successfully',
+      message: "User deleted successfully",
     });
   } catch (error) {
     next(error);
@@ -215,17 +266,17 @@ export const toggleUserStatus = async (req, res, next) => {
 
     if (!user) {
       res.status(404);
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
-    user.status = user.status === 'active' ? 'inactive' : 'active';
+    user.status = user.status === "active" ? "inactive" : "active";
     await user.save();
-    await user.populate('institution', 'name');
+    await user.populate("institution", "name");
 
     res.json({
       success: true,
       data: user,
-      message: `User ${user.status === 'active' ? 'activated' : 'deactivated'} successfully`,
+      message: `User ${user.status === "active" ? "activated" : "deactivated"} successfully`,
     });
   } catch (error) {
     next(error);
