@@ -148,7 +148,7 @@ export const PanelsPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 onClick={() => setViewPanelMembers(panel)}
-                className="card-premium p-6 space-y-4 group cursor-pointer hover:border-primary-300 transition-all border-2 border-transparent"
+                className="card-premium p-5 space-y-3 group cursor-pointer hover:border-primary-300 transition-all border-2 border-transparent"
               >
                 <div className="flex items-start justify-between">
                   <h3 className="font-semibold text-slate-900 text-lg">

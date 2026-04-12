@@ -150,14 +150,14 @@ export const InstitutionsPage = () => {
         />
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {paginatedInstitutions.map((institution, index) => (
               <motion.div
                 key={institution._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="card-premium p-6 space-y-4 group"
+                className="card-premium p-5 space-y-4 group"
               >
                 <div className="flex items-start justify-between">
                   <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-2xl">

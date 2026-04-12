@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Building2,
@@ -11,8 +11,11 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+import logo from "../../assets/logo.png";
+
 export const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -29,7 +32,13 @@ export const Sidebar = () => {
     >
       <div className="p-6 flex items-center justify-between">
         {!collapsed && (
-          <h1 className="text-xl font-bold text-gradient">OryxTHealth.ai</h1>
+          <NavLink to="/" className="flex items-center ml-10">
+            <img
+              src={logo}
+              alt="OryxT Health"
+              className="h-20 w-auto object-contain"
+            />
+          </NavLink>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}

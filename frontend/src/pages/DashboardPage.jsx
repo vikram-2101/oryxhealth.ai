@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Building2,
@@ -50,6 +51,7 @@ const PIE_COLORS = [
 ];
 
 export const DashboardPage = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [recentUsers, setRecentUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,6 +97,7 @@ export const DashboardPage = () => {
       gradient: "from-primary/10 to-primary/5",
       iconBg: "bg-primary/10",
       iconColor: "text-primary",
+      path: "/customers",
     },
     {
       label: "Total Institutions",
@@ -105,6 +108,7 @@ export const DashboardPage = () => {
       gradient: "from-emerald-500/10 to-emerald-500/5",
       iconBg: "bg-emerald-500/10",
       iconColor: "text-emerald-600",
+      path: "/institutions",
     },
     {
       label: "Total Users",
@@ -115,6 +119,7 @@ export const DashboardPage = () => {
       gradient: "from-violet-500/10 to-violet-500/5",
       iconBg: "bg-violet-500/10",
       iconColor: "text-violet-600",
+      path: "/users",
     },
     {
       label: "Total Panels",
@@ -125,6 +130,7 @@ export const DashboardPage = () => {
       gradient: "from-amber-500/10 to-amber-500/5",
       iconBg: "bg-amber-500/10",
       iconColor: "text-amber-600",
+      path: "/panels",
     },
   ];
 
@@ -190,11 +196,13 @@ export const DashboardPage = () => {
             <motion.div
               key={s.label}
               whileHover={{
-                y: -3,
-                boxShadow: "0 8px 30px -12px rgba(0,0,0,0.12)",
+                y: -5,
+                boxShadow: "0 12px 40px -12px rgba(0,0,0,0.15)",
+                borderColor: "rgb(var(--primary-200))",
               }}
               transition={{ duration: 0.25 }}
-              className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5"
+              onClick={() => navigate(s.path)}
+              className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 cursor-pointer group/card"
             >
               <div
                 className={`absolute inset-0 bg-gradient-to-br ${s.gradient} pointer-events-none`}

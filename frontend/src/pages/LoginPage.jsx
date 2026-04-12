@@ -40,7 +40,7 @@ export const LoginPage = () => {
           <img
             src={logo}
             alt="OryxTHealth Logo"
-            className="h-20 mx-auto mb-4"
+            className="h-28 mx-auto mb-4"
           />
 
           <p className="text-slate-600">Admin Portal</p>
