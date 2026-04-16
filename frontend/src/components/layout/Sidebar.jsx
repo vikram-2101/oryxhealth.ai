@@ -60,7 +60,7 @@ export const Sidebar = () => {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${
                 isActive
-                  ? "bg-primary-600 text-white shadow-lg"
+                  ? "bg-primary-600 text-white shadow-lg shadow-primary-200/50"
                   : "text-slate-600 hover:bg-white/50"
               }`
             }

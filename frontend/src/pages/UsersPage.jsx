@@ -18,7 +18,7 @@ const roleIcons = {
 };
 
 const roleColors = {
-  Doctor: 'bg-blue-100 text-blue-700',
+  Doctor: 'bg-primary-100 text-primary-700',
   'Health Worker': 'bg-emerald-100 text-emerald-700',
   Coordinator: 'bg-amber-100 text-amber-700',
 };

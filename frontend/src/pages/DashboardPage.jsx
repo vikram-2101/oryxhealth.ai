@@ -45,9 +45,9 @@ const item = {
 };
 
 const PIE_COLORS = [
-  "hsl(217, 91%, 50%)",
-  "hsl(160, 84%, 39%)",
-  "hsl(38, 92%, 50%)",
+  "#9165bd", // Brand Purple
+  "#10b981", // Emerald
+  "#f59e0b", // Amber
 ];
 
 export const DashboardPage = () => {
@@ -298,7 +298,7 @@ export const DashboardPage = () => {
               <Line
                 type="monotone"
                 dataKey="users"
-                stroke="hsl(217, 91%, 50%)"
+                stroke="#9165bd"
                 strokeWidth={2.5}
                 dot={false}
               />
