@@ -155,6 +155,9 @@ export const updateUser = async (req, res, next) => {
       "role",
       "sex",
       "address",
+      "country",
+      "state",
+      "city",
       "phone",
       "email",
       "institution",
@@ -188,20 +191,31 @@ export const updateUser = async (req, res, next) => {
       }
     });
 
+    if (req.file) {
+      updateData.signatureImage = `/uploads/${req.file.filename}`;
+    }
+
+    // Parse institutionAccess if it's sent as a string (JSON/CSV)
+    if (Object.prototype.hasOwnProperty.call(userData, 'institutionAccess')) {
+      let accessList = [];
+      const rawAccess = userData.institutionAccess;
+      
+      if (typeof rawAccess === "string" && rawAccess.trim() !== "") {
+        try {
+          accessList = JSON.parse(rawAccess);
+        } catch (e) {
+          accessList = rawAccess.split(",").map(id => id.trim()).filter(id => id !== "");
+        }
+      } else if (Array.isArray(rawAccess)) {
+        accessList = rawAccess;
+      }
+      
+      updateData.institutionAccess = accessList;
+    }
+
     // Ensure primary institution is in institutionAccess for consistency
     const finalInstitution = updateData.institution || user.institution;
     let finalAccess = updateData.institutionAccess || user.institutionAccess || [];
-
-    // Parse if string (support both JSON and CSV formats as per createUser logic)
-    if (typeof finalAccess === "string") {
-      try {
-        finalAccess = JSON.parse(finalAccess);
-      } catch (e) {
-        finalAccess = finalAccess
-          .split(",")
-          .filter((id) => id.trim() !== "");
-      }
-    }
 
     if (finalInstitution) {
       const instIdStr = finalInstitution.toString();

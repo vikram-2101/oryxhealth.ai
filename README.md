@@ -27,18 +27,21 @@ OxyHealth Admin Portal is a comprehensive administrative dashboard for managing 
 **Live Demo**: [Coming Soon]
 
 **Default Login**:
-- Email: `admin@oxyhealth.ai`
+
+- Email: `admin@oryxhealth.ai`
 - Password: `admin123`
 
 ## ✨ Features
 
 ### 🎨 Premium Dashboard
+
 - **KPI Cards** with real-time statistics and trend indicators
 - **Interactive Charts** (Line charts for growth, Pie charts for distribution)
 - **Recent Activity Table** showing latest user registrations
 - **Responsive Design** optimized for all screen sizes
 
 ### 👥 User Management
+
 - Complete CRUD operations for users
 - Role-based user types (Doctors, Health Workers, Coordinators)
 - Conditional form fields (e.g., registration number for doctors)
@@ -47,6 +50,7 @@ OxyHealth Admin Portal is a comprehensive administrative dashboard for managing 
 - Advanced filtering by role and institution
 
 ### 🏢 Customer & Institution Management
+
 - Customer account management with contact details
 - Institution registration linked to customers
 - Emoji-based logos for visual identification
@@ -54,12 +58,14 @@ OxyHealth Admin Portal is a comprehensive administrative dashboard for managing 
 - Status toggles with smooth animations
 
 ### 🔧 Panel Management
+
 - Create and manage medical review panels
 - Multi-select member assignment
 - Visual member avatars
 - Panel status management
 
 ### 🎨 UI/UX Excellence
+
 - **Glassmorphism** design with modern aesthetics
 - **Smooth Animations** using Framer Motion
 - **Form Validation** with clear error messages
@@ -71,6 +77,7 @@ OxyHealth Admin Portal is a comprehensive administrative dashboard for managing 
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **React 18** - UI library
 - **Vite** - Build tool and dev server
 - **TailwindCSS** - Utility-first CSS framework
@@ -80,6 +87,7 @@ OxyHealth Admin Portal is a comprehensive administrative dashboard for managing 
 - **Lucide React** - Icon library
 
 ### Backend
+
 - **Node.js** - Runtime environment
 - **Express.js** - Web framework
 - **MongoDB** - NoSQL database
@@ -90,6 +98,7 @@ OxyHealth Admin Portal is a comprehensive administrative dashboard for managing 
 - **dotenv** - Environment variables
 
 ### Deployment
+
 - **Frontend**: Vercel
 - **Backend**: Render
 - **Database**: MongoDB Atlas
@@ -97,20 +106,24 @@ OxyHealth Admin Portal is a comprehensive administrative dashboard for managing 
 ## 📸 Screenshots
 
 ### Dashboard
+
 ![Dashboard](docs/screenshots/dashboard.png)
-*Premium dashboard with KPI cards, growth charts, and recent activity*
+_Premium dashboard with KPI cards, growth charts, and recent activity_
 
 ### Customer Management
+
 ![Customers](docs/screenshots/customers.png)
-*Customer management with search, filter, and CRUD operations*
+_Customer management with search, filter, and CRUD operations_
 
 ### User Management
+
 ![Users](docs/screenshots/users.png)
-*User management with role-based filtering and table view*
+_User management with role-based filtering and table view_
 
 ### Forms
+
 ![Form Modal](docs/screenshots/form-modal.png)
-*Beautiful modal forms with validation and smooth animations*
+_Beautiful modal forms with validation and smooth animations_
 
 ## 🚀 Getting Started
 
@@ -123,18 +136,21 @@ OxyHealth Admin Portal is a comprehensive administrative dashboard for managing 
 ### Installation
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/vikram-2101/oryxhealth.ai.git
 cd oryxhealth.ai
 ```
 
 2. **Setup Backend**
+
 ```bash
 cd backend
 npm install
 ```
 
 Create `.env` file:
+
 ```env
 MONGODB_URI=mongodb://localhost:27017/oxyhealth
 JWT_SECRET=your-secret-key-here
@@ -143,41 +159,48 @@ PORT=5000
 ```
 
 Seed the database:
+
 ```bash
 npm run seed
 ```
 
 Start backend server:
+
 ```bash
 npm start
 ```
 
 3. **Setup Frontend**
+
 ```bash
 cd ../frontend
 npm install
 ```
 
 Create `.env` file:
+
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
 Start frontend dev server:
+
 ```bash
 npm run dev
 ```
 
 4. **Access the application**
+
 - Frontend: http://localhost:3000
 - Backend: http://localhost:5000
-- Login: `admin@oxyhealth.ai` / `admin123`
+- Login: `admin@oryxhealth.ai` / `admin123`
 
 ## 🌐 Deployment
 
 ### Quick Deployment Guide
 
 #### Backend (Render)
+
 1. Create new Web Service on Render
 2. Connect GitHub repository
 3. Set root directory to `backend`
@@ -185,6 +208,7 @@ npm run dev
 5. Deploy and copy backend URL
 
 #### Frontend (Vercel)
+
 1. Create new project on Vercel
 2. Import GitHub repository
 3. Set root directory to `frontend`
@@ -225,10 +249,12 @@ oxyhealth.ai/
 ## 📚 API Documentation
 
 ### Authentication
+
 - `POST /api/auth/login` - Admin login
 - `POST /api/auth/logout` - Admin logout
 
 ### Customers
+
 - `GET /api/customers` - Get all customers
 - `POST /api/customers` - Create customer
 - `PUT /api/customers/:id` - Update customer
@@ -236,6 +262,7 @@ oxyhealth.ai/
 - `PATCH /api/customers/:id/toggle-status` - Toggle status
 
 ### Institutions
+
 - `GET /api/institutions` - Get all institutions
 - `POST /api/institutions` - Create institution
 - `PUT /api/institutions/:id` - Update institution
@@ -243,6 +270,7 @@ oxyhealth.ai/
 - `PATCH /api/institutions/:id/toggle-status` - Toggle status
 
 ### Users
+
 - `GET /api/users` - Get all users
 - `POST /api/users` - Create user
 - `PUT /api/users/:id` - Update user
@@ -250,6 +278,7 @@ oxyhealth.ai/
 - `PATCH /api/users/:id/toggle-status` - Toggle status
 
 ### Panels
+
 - `GET /api/panels` - Get all panels
 - `POST /api/panels` - Create panel
 - `PUT /api/panels/:id` - Update panel
@@ -257,6 +286,7 @@ oxyhealth.ai/
 - `PATCH /api/panels/:id/toggle-status` - Toggle status
 
 ### Statistics
+
 - `GET /api/stats/dashboard` - Get dashboard statistics
 
 ## 🤝 Contributing
@@ -276,6 +306,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 👨‍💻 Author
 
 **Vikram Kumar**
+
 - GitHub: [@vikram-2101](https://github.com/vikram-2101)
 
 ## 🙏 Acknowledgments
@@ -287,7 +318,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-For support, email vikram@example.com or create an issue in the repository.
+For support, email vikramk2101@example.com or create an issue in the repository.
 
 ---
 

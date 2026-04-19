@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { FormInput } from "../ui/FormInput";
 import { FormSelect } from "../ui/FormSelect";
 import { institutionService } from "../../services";
-import { Upload, X, Edit } from "lucide-react";
+import { Upload, X, Edit, MapPin } from "lucide-react";
+import { GetCountries, GetState, GetCity } from "react-country-state-city";
 
 const ROLE_OPTIONS = [
   { value: "Doctor", label: "Doctor" },
@@ -22,6 +23,9 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
     name: user?.name || "",
     email: user?.email || "",
     phone: user?.phone || "",
+    country: user?.country || "India",
+    state: user?.state || "",
+    city: user?.city || "",
     address: user?.address || "",
     role: user?.role || "",
     sex: user?.sex || "",
@@ -35,6 +39,10 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
     password: "",
   });
 
+  const [countriesList, setCountriesList] = useState([]);
+  const [stateList, setStateList] = useState([]);
+  const [cityList, setCityList] = useState([]);
+
   const [photoPreview, setPhotoPreview] = useState(user?.photo || null);
   const [signaturePreview, setSignaturePreview] = useState(
     user?.signatureImage || null,
@@ -42,11 +50,37 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
   const [institutions, setInstitutions] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [files, setFiles] = useState({ photo: null, signatureImage: null });
   const [loadingInstitutions, setLoadingInstitutions] = useState(true);
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
     fetchInstitutions();
+    
+    GetCountries().then((result) => {
+      if (!result) return;
+      const filtered = result.filter((c) =>
+        ["India", "United States", "United Kingdom"].includes(c.name),
+      );
+      setCountriesList(filtered);
+
+      const countryName = user?.country || "India";
+      const country = filtered.find((c) => c.name === countryName);
+
+      if (country) {
+        GetState(country.id).then((states) => {
+          setStateList(states);
+          if (user?.state) {
+            const state = states.find((s) => s.name === user.state);
+            if (state) {
+              GetCity(country.id, state.id).then((cities) => {
+                setCityList(cities);
+              });
+            }
+          }
+        });
+      }
+    });
   }, []);
 
   const fetchInstitutions = async () => {
@@ -129,19 +163,35 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
 
     setIsSubmitting(true);
     try {
-      if (user && !user._id) {
-        throw new Error("User ID is missing. Cannot perform update.");
-      }
+      // Create FormData for multipart submission
+      const formDataToSend = new FormData();
 
-      // Send as pure JSON
-      const payload = { ...formData };
+      // Append all fields from formData state
+      Object.keys(formData).forEach((key) => {
+        // Skip images if we're sending them as files
+        if (key !== "photo" && key !== "signatureImage") {
+          if (Array.isArray(formData[key])) {
+            formDataToSend.append(key, JSON.stringify(formData[key]));
+          } else {
+            formDataToSend.append(key, formData[key] || "");
+          }
+        }
+      });
+
+      // Append actual files if they were selected
+      if (files.photo) {
+        formDataToSend.append("photo", files.photo);
+      }
+      if (files.signatureImage) {
+        formDataToSend.append("signatureImage", files.signatureImage);
+      }
 
       // Remove empty password on update
-      if (user && !payload.password) {
-        delete payload.password;
+      if (user && !formData.password) {
+        formDataToSend.delete("password");
       }
 
-      await onSubmit(payload);
+      await onSubmit(formDataToSend);
     } catch (error) {
       console.error("Form submission error:", error);
       if (error.response) {
@@ -195,6 +245,47 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
     });
   };
 
+  const handleCountryChange = (e) => {
+    const countryName = e.target.value;
+    const country = countriesList.find((c) => c.name === countryName);
+
+    setFormData((prev) => ({
+      ...prev,
+      country: countryName,
+      state: "",
+      city: "",
+    }));
+
+    if (country) {
+      GetState(country.id).then((states) => {
+        setStateList(states);
+      });
+    } else {
+      setStateList([]);
+    }
+    setCityList([]);
+  };
+
+  const handleStateChange = (e) => {
+    const stateName = e.target.value;
+    const country = countriesList.find((c) => c.name === formData.country);
+    const state = stateList.find((s) => s.name === stateName);
+
+    setFormData((prev) => ({
+      ...prev,
+      state: stateName,
+      city: "",
+    }));
+
+    if (country && state) {
+      GetCity(country.id, state.id).then((cities) => {
+        setCityList(cities);
+      });
+    } else {
+      setCityList([]);
+    }
+  };
+
   const handleInstitutionAccessToggle = (instId) => {
     setFormData((prev) => {
       const currentAccess = prev.institutionAccess || [];
@@ -225,7 +316,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result;
-        setFormData((prev) => ({ ...prev, [field]: base64String }));
+        setFiles((prev) => ({ ...prev, [field]: file }));
         if (field === "photo") setPhotoPreview(base64String);
         if (field === "signatureImage") setSignaturePreview(base64String);
       };
@@ -358,15 +449,96 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
         />
       </div>
 
-      <FormInput
-        label="Address"
-        name="address"
-        value={formData.address}
-        onChange={handleChange}
-        error={errors.address}
-        required
-        placeholder="e.g., 123 Main St, City, State"
-      />
+      {/* Address Details Section */}
+      <div className="border border-slate-200 rounded-2xl p-6 bg-slate-50/50 space-y-6">
+        <div className="flex items-center gap-2 mb-2">
+          <MapPin className="w-5 h-5 text-primary-600" />
+          <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider">
+            Address Details
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700 ml-1">
+              Country <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="country"
+              value={formData.country}
+              onChange={handleCountryChange}
+              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none"
+            >
+              <option value="">
+                {countriesList.length === 0 ? "Loading countries..." : "Select Country"}
+              </option>
+              {countriesList.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700 ml-1">
+              State <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="state"
+              value={formData.state}
+              onChange={handleStateChange}
+              disabled={!formData.country || stateList.length === 0}
+              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
+            >
+              <option value="">
+                {formData.country && stateList.length === 0 ? "Loading states..." : "Select State"}
+              </option>
+              {stateList.map((s) => (
+                <option key={s.id} value={s.name}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold text-slate-700 ml-1">
+            City <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            disabled={!formData.state || cityList.length === 0}
+            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
+          >
+            <option value="">
+              {formData.state && cityList.length === 0 ? "Loading cities..." : "Select City"}
+            </option>
+            {cityList.map((c) => (
+              <option key={c.id} value={c.name}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold text-slate-700 ml-1">
+            Address
+          </label>
+          <textarea
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
+            rows={2}
+            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none resize-none placeholder:text-slate-400"
+            placeholder="Street address, building, apartment..."
+          />
+        </div>
+      </div>
 
       <FormSelect
         label="Primary Institution"

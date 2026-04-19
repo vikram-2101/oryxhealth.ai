@@ -17,11 +17,11 @@ router.use(protect);
 
 router.route('/')
   .get(getUsers)
-  .post(createUser);
+  .post(upload.single('signatureImage'), createUser);
 
 router.route('/:id')
   .get(getUser)
-  .put(updateUser)
+  .put(upload.single('signatureImage'), updateUser)
   .delete(deleteUser);
 router.patch('/:id/status', toggleUserStatus);
 
