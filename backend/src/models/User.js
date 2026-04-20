@@ -14,6 +14,11 @@ const userSchema = new mongoose.Schema(
       required: [true, "Role is required"],
       enum: ["Doctor", "Health Worker", "Coordinator"],
     },
+    admin: {
+      type: String,
+      enum: ["none", "account", "institution"],
+      default: "none",
+    },
     sex: {
       type: String,
       enum: ["Male", "Female", "Other"],

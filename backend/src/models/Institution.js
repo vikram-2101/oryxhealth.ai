@@ -2,10 +2,25 @@ import mongoose from 'mongoose';
 
 const institutionSchema = new mongoose.Schema(
   {
+    accountId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Customer',
+      required: [true, 'Account ID is required'],
+    },
     name: {
       type: String,
       required: [true, 'Institution name is required'],
       trim: true,
+    },
+    username: {
+      type: String,
+      required: [true, 'Username is required'],
+      unique: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
     },
     logo: {
       type: String,
@@ -29,11 +44,25 @@ const institutionSchema = new mongoose.Schema(
         type: String,
         trim: true,
       },
+      phoneCountry: {
+        type: String,
+        trim: true,
+      }
     },
-    customerAccount: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Customer',
-      required: [true, 'Customer account is required'],
+    address: {
+      country: { type: String, trim: true },
+      state: { type: String, trim: true },
+      city: { type: String, trim: true },
+      addressLine: { type: String, trim: true },
+      pincode: { type: String, trim: true },
+    },
+    pan: {
+      type: String,
+      trim: true,
+    },
+    gst: {
+      type: String,
+      trim: true,
     },
     status: {
       type: String,

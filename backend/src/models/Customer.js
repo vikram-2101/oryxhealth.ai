@@ -7,6 +7,29 @@ const customerSchema = new mongoose.Schema(
       required: [true, 'Customer name is required'],
       trim: true,
     },
+    shortName: {
+      type: String,
+      required: [true, 'Short name is required'],
+      trim: true,
+    },
+    username: {
+      type: String,
+      required: [true, 'Username is required'],
+      unique: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+    },
+    welcomeMessage: {
+      type: String,
+      trim: true,
+    },
+    tagline: {
+      type: String,
+      trim: true,
+    },
     logo: {
       type: String,
       default: '',
@@ -29,6 +52,17 @@ const customerSchema = new mongoose.Schema(
         type: String,
         trim: true,
       },
+      phoneCountry: {
+        type: String,
+        trim: true,
+      },
+    },
+    address: {
+      country: { type: String, trim: true },
+      state: { type: String, trim: true },
+      city: { type: String, trim: true },
+      addressLine: { type: String, trim: true },
+      pincode: { type: String, trim: true },
     },
     status: {
       type: String,

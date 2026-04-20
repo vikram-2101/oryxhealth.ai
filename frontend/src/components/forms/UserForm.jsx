@@ -12,6 +12,12 @@ const ROLE_OPTIONS = [
   { value: "Coordinator", label: "Coordinator" },
 ];
 
+const ADMIN_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "account", label: "Account Admin" },
+  { value: "institution", label: "Institution Admin" },
+];
+
 const SEX_OPTIONS = [
   { value: "Male", label: "Male" },
   { value: "Female", label: "Female" },
@@ -28,6 +34,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
     city: user?.city || "",
     address: user?.address || "",
     role: user?.role || "",
+    admin: user?.admin || "none",
     sex: user?.sex || "",
     institution: user?.institution?._id || "",
     institutionAccess: user?.institutionAccess?.map((i) => i._id || i) || [],
@@ -56,7 +63,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
 
   useEffect(() => {
     fetchInstitutions();
-    
+
     GetCountries().then((result) => {
       if (!result) return;
       const filtered = result.filter((c) =>
@@ -428,7 +435,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <FormSelect
           label="Role"
           name="role"
@@ -437,6 +444,13 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
           options={ROLE_OPTIONS}
           error={errors.role}
           required
+        />
+        <FormSelect
+          label="Admin Access Portal"
+          name="admin"
+          value={formData.admin}
+          onChange={handleChange}
+          options={ADMIN_OPTIONS}
         />
         <FormSelect
           label="Sex"
@@ -470,7 +484,9 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
               className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none"
             >
               <option value="">
-                {countriesList.length === 0 ? "Loading countries..." : "Select Country"}
+                {countriesList.length === 0
+                  ? "Loading countries..."
+                  : "Select Country"}
               </option>
               {countriesList.map((c) => (
                 <option key={c.id} value={c.name}>
@@ -492,7 +508,9 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
               className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
             >
               <option value="">
-                {formData.country && stateList.length === 0 ? "Loading states..." : "Select State"}
+                {formData.country && stateList.length === 0
+                  ? "Loading states..."
+                  : "Select State"}
               </option>
               {stateList.map((s) => (
                 <option key={s.id} value={s.name}>
@@ -515,7 +533,9 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
             className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
           >
             <option value="">
-              {formData.state && cityList.length === 0 ? "Loading cities..." : "Select City"}
+              {formData.state && cityList.length === 0
+                ? "Loading cities..."
+                : "Select City"}
             </option>
             {cityList.map((c) => (
               <option key={c.id} value={c.name}>
@@ -565,21 +585,21 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
           {institutions
             .filter((inst) => inst._id !== formData.institution)
             .map((inst) => (
-            <label
-              key={inst._id}
-              className="flex items-center gap-2 p-2 rounded-lg hover:bg-white transition-colors cursor-pointer group"
-            >
-              <input
-                type="checkbox"
-                checked={formData.institutionAccess.includes(inst._id)}
-                onChange={() => handleInstitutionAccessToggle(inst._id)}
-                className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
-                {inst.name}
-              </span>
-            </label>
-          ))}
+              <label
+                key={inst._id}
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white transition-colors cursor-pointer group"
+              >
+                <input
+                  type="checkbox"
+                  checked={formData.institutionAccess.includes(inst._id)}
+                  onChange={() => handleInstitutionAccessToggle(inst._id)}
+                  className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
+                  {inst.name}
+                </span>
+              </label>
+            ))}
           {institutions.length === 0 && !loadingInstitutions && (
             <p className="text-sm text-slate-400 col-span-2 text-center py-2">
               No institutions available
