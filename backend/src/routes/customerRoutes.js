@@ -8,10 +8,13 @@ import {
   toggleCustomerStatus,
 } from '../controllers/customerController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { requireRole } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
-router.use(protect);
+// All customer routes are Super Admin only — Account/Institution admins
+// cannot see or manage other customers.
+router.use(protect, requireRole('super_admin'));
 
 router.route('/').get(getCustomers).post(createCustomer);
 router

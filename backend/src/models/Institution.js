@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const institutionSchema = new mongoose.Schema(
   {
@@ -21,6 +22,7 @@ const institutionSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Password is required'],
+      select: false,
     },
     logo: {
       type: String,
@@ -83,6 +85,31 @@ institutionSchema.virtual('users', {
   localField: '_id',
   foreignField: 'institution',
 });
+
+/* =========================================
+   PASSWORD HASHING
+========================================= */
+institutionSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+
+// Allow partial updates (findOneAndUpdate) to also hash the password
+institutionSchema.pre('findOneAndUpdate', async function (next) {
+  const update = this.getUpdate();
+  if (update.password) {
+    update.password = await bcrypt.hash(update.password, 12);
+  } else if (update.$set && update.$set.password) {
+    update.$set.password = await bcrypt.hash(update.$set.password, 12);
+  }
+  this.setUpdate(update);
+  next();
+});
+
+institutionSchema.methods.comparePassword = async function (enteredPassword) {
+  return bcrypt.compare(enteredPassword, this.password);
+};
 
 const Institution = mongoose.model('Institution', institutionSchema);
 

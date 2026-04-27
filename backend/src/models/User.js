@@ -3,9 +3,18 @@ import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema(
   {
+    firstName: {
+      type: String,
+      required: [true, "First name is required"],
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: [true, "Last name is required"],
+      trim: true,
+    },
     name: {
       type: String,
-      required: [true, "User name is required"],
       trim: true,
     },
 
@@ -21,7 +30,7 @@ const userSchema = new mongoose.Schema(
     },
     sex: {
       type: String,
-      enum: ["Male", "Female", "Other"],
+      enum: ["Male", "Female", "Other", "Any"],
     },
     address: {
       type: String,
@@ -56,6 +65,11 @@ const userSchema = new mongoose.Schema(
       index: true,
     },
 
+    accountId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      required: [true, "Account is required"],
+    },
     institution: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Institution",
@@ -139,6 +153,9 @@ const userSchema = new mongoose.Schema(
 ========================================= */
 
 userSchema.pre("save", async function (next) {
+  // Sync name field
+  this.name = `${this.firstName} ${this.lastName}`.trim();
+
   if (!this.isModified("password")) return next();
 
   this.password = await bcrypt.hash(this.password, 12);

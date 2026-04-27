@@ -11,20 +11,35 @@ export const getUsers = async (req, res, next) => {
     const search = req.query.search || "";
     const role = req.query.role;
     const institution = req.query.institution;
+    const accountId = req.query.accountId;
     const status = req.query.status;
 
     const query = {};
+
+    // ── Scope Filter ─────────────────────────────────────────────────────
+    if (req.userRole === 'account') {
+      query.accountId = req.accountId;
+      if (institution) {
+        query.institution = institution; // Scoped by accountId already
+      }
+    } else if (req.userRole === 'institution') {
+      query.institution = req.institutionId;
+    } else {
+      // Super Admin
+      if (accountId) query.accountId = accountId;
+      if (institution) query.institution = institution;
+    }
+
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
+        { firstName: { $regex: search, $options: "i" } },
+        { lastName: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
       ];
     }
     if (role) {
       query.role = role;
-    }
-    if (institution) {
-      query.institution = institution;
     }
     if (status) {
       query.status = status;
@@ -33,6 +48,7 @@ export const getUsers = async (req, res, next) => {
     const total = await User.countDocuments(query);
     const users = await User.find(query)
       .populate("institution", "name")
+      .populate("accountId", "name")
       .limit(limit)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
@@ -58,14 +74,26 @@ export const getUsers = async (req, res, next) => {
 // @access  Private
 export const getUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id).populate(
-      "institution",
-      "name",
-    );
+    const user = await User.findById(req.params.id)
+      .populate("institution", "name")
+      .populate("accountId", "name");
 
     if (!user) {
       res.status(404);
       throw new Error("User not found");
+    }
+
+    // ── Scope Check ──────────────────────────────────────────────────────
+    if (req.userRole === 'account') {
+      if (user.accountId.toString() !== req.accountId) {
+        res.status(403);
+        throw new Error('Not authorized to view this user');
+      }
+    } else if (req.userRole === 'institution') {
+      if (user.institution.toString() !== req.institutionId) {
+        res.status(403);
+        throw new Error('Not authorized to view this user');
+      }
     }
 
     res.json({
@@ -82,12 +110,20 @@ export const getUser = async (req, res, next) => {
 // @access  Private
 export const createUser = async (req, res, next) => {
   try {
-    const { email, institution } = req.body;
+    const { email, institution, accountId, firstName, lastName } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
       res.status(400);
       throw new Error("A user with this email already exists");
+    }
+
+    // ── Forced Scope ──────────────────────────────────────────────────────
+    if (req.userRole === 'institution') {
+      req.body.institution = req.institutionId;
+      // We should probably also inject accountId from the institution itself if not provided
+    } else if (req.userRole === 'account') {
+      req.body.accountId = req.accountId;
     }
 
     const userData = { ...req.body };
@@ -106,9 +142,10 @@ export const createUser = async (req, res, next) => {
       accessList = userData.institutionAccess;
     }
 
-    // SENIOR FIX: Automatically add primary institution to access list
-    if (institution && !accessList.includes(institution)) {
-      accessList.push(institution);
+    // Automatically add primary institution to access list
+    const primaryInst = userData.institution || institution;
+    if (primaryInst && !accessList.includes(primaryInst)) {
+      accessList.push(primaryInst);
     }
     userData.institutionAccess = accessList;
 
@@ -118,6 +155,7 @@ export const createUser = async (req, res, next) => {
 
     const user = await User.create(userData);
     await user.populate("institution", "name");
+    await user.populate("accountId", "name");
 
     res.status(201).json({ success: true, data: user });
   } catch (error) {
@@ -130,17 +168,24 @@ export const createUser = async (req, res, next) => {
 // @access  Private
 export const updateUser = async (req, res, next) => {
   try {
-    console.log(" Update User Request:", {
-      id: req.params.id,
-      body: req.body,
-      file: req.file ? req.file.filename : "no-file",
-    });
-
     const user = await User.findById(req.params.id);
 
     if (!user) {
       res.status(404);
       throw new Error("User not found");
+    }
+
+    // ── Scope Check ──────────────────────────────────────────────────────
+    if (req.userRole === 'account') {
+      if (user.accountId.toString() !== req.accountId) {
+        res.status(403);
+        throw new Error('Not authorized to update this user');
+      }
+    } else if (req.userRole === 'institution') {
+      if (user.institution.toString() !== req.institutionId) {
+        res.status(403);
+        throw new Error('Not authorized to update this user');
+      }
     }
 
     const userData = { ...req.body };
@@ -151,6 +196,8 @@ export const updateUser = async (req, res, next) => {
 
     const updateData = {};
     const allowedFields = [
+      "firstName",
+      "lastName",
       "name",
       "role",
       "sex",
@@ -160,6 +207,7 @@ export const updateUser = async (req, res, next) => {
       "city",
       "phone",
       "email",
+      "accountId",
       "institution",
       "institutionAccess",
       "registrationNumber",
@@ -171,22 +219,8 @@ export const updateUser = async (req, res, next) => {
       "password",
     ];
 
-    console.log(
-      "Validating ID:",
-      req.params.id,
-      "| Is Valid:",
-      mongoose.Types.ObjectId.isValid(req.params.id),
-    );
-
     allowedFields.forEach((field) => {
       if (userData[field] !== undefined) {
-        // Prevent CastError by not allowing empty strings for ObjectId fields
-        if (
-          (field === "institution" || field === "institutionAccess") &&
-          userData[field] === ""
-        ) {
-          return;
-        }
         updateData[field] = userData[field];
       }
     });
@@ -195,7 +229,6 @@ export const updateUser = async (req, res, next) => {
       updateData.signatureImage = `/uploads/${req.file.filename}`;
     }
 
-    // Parse institutionAccess if it's sent as a string (JSON/CSV)
     if (Object.prototype.hasOwnProperty.call(userData, 'institutionAccess')) {
       let accessList = [];
       const rawAccess = userData.institutionAccess;
@@ -213,7 +246,6 @@ export const updateUser = async (req, res, next) => {
       updateData.institutionAccess = accessList;
     }
 
-    // Ensure primary institution is in institutionAccess for consistency
     const finalInstitution = updateData.institution || user.institution;
     let finalAccess = updateData.institutionAccess || user.institutionAccess || [];
 
@@ -227,15 +259,10 @@ export const updateUser = async (req, res, next) => {
       }
     }
 
-    // Use Object.assign and save() instead of findByIdAndUpdate to trigger 'pre-save' hooks (e.g., password hashing)
     Object.assign(user, updateData);
     const updatedUser = await user.save();
     await updatedUser.populate("institution", "name");
-
-    if (!updatedUser) {
-      res.status(404);
-      throw new Error("User not found after update");
-    }
+    await updatedUser.populate("accountId", "name");
 
     res.json({
       success: true,
@@ -259,6 +286,20 @@ export const deleteUser = async (req, res, next) => {
       throw new Error("User not found");
     }
 
+    // ── Scope Check ──────────────────────────────────────────────────────
+    if (req.userRole === 'account') {
+      const inst = await Institution.findById(user.institution);
+      if (!inst || inst.accountId.toString() !== req.accountId) {
+        res.status(403);
+        throw new Error('Not authorized to delete this user');
+      }
+    } else if (req.userRole === 'institution') {
+      if (user.institution.toString() !== req.institutionId) {
+        res.status(403);
+        throw new Error('Not authorized to delete this user');
+      }
+    }
+
     await user.deleteOne();
 
     res.json({
@@ -280,6 +321,20 @@ export const toggleUserStatus = async (req, res, next) => {
     if (!user) {
       res.status(404);
       throw new Error("User not found");
+    }
+
+    // ── Scope Check ──────────────────────────────────────────────────────
+    if (req.userRole === 'account') {
+      const inst = await Institution.findById(user.institution);
+      if (!inst || inst.accountId.toString() !== req.accountId) {
+        res.status(403);
+        throw new Error('Not authorized to modify this user');
+      }
+    } else if (req.userRole === 'institution') {
+      if (user.institution.toString() !== req.institutionId) {
+        res.status(403);
+        throw new Error('Not authorized to modify this user');
+      }
     }
 
     user.status = user.status === "active" ? "inactive" : "active";

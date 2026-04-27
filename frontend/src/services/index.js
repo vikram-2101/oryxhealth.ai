@@ -151,3 +151,134 @@ export const panelService = {
     return response.data;
   },
 };
+
+export const categoryService = {
+  getAll: async (params) => {
+    const response = await api.get('/categories', { params });
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/categories/${id}`);
+    return response.data;
+  },
+
+  create: async (data) => {
+    const response = await api.post('/categories', data);
+    return response.data;
+  },
+
+  update: async (id, data) => {
+    const response = await api.put(`/categories/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/categories/${id}`);
+    return response.data;
+  },
+};
+
+export const protocolService = {
+  getAll: async (params) => {
+    const response = await api.get('/protocols', { params });
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/protocols/${id}`);
+    return response.data;
+  },
+
+  create: async (data) => {
+    const response = await api.post('/protocols', data);
+    return response.data;
+  },
+
+  update: async (id, data) => {
+    const response = await api.put(`/protocols/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/protocols/${id}`);
+    return response.data;
+  },
+};
+
+export const programTypeService = {
+  getAll: async (params) => {
+    const response = await api.get('/program-types', { params });
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/program-types/${id}`);
+    return response.data;
+  },
+
+  create: async (data) => {
+    const response = await api.post('/program-types', data);
+    return response.data;
+  },
+
+  update: async (id, data) => {
+    const response = await api.put(`/program-types/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/program-types/${id}`);
+    return response.data;
+  },
+};
+
+export const programService = {
+  getAll: async (params) => {
+    const response = await api.get('/programs', { params });
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/programs/${id}`);
+    return response.data;
+  },
+
+  create: async (data) => {
+    const response = await api.post('/programs', data);
+    return response.data;
+  },
+
+  update: async (id, data) => {
+    const response = await api.put(`/programs/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/programs/${id}`);
+    return response.data;
+  },
+};
+
+export const appointmentTypeService = {
+  getAll: async (params) => {
+    const response = await api.get('/appointment-types', { params });
+    return response.data;
+  },
+
+  create: async (data) => {
+    const response = await api.post('/appointment-types', data);
+    return response.data;
+  },
+
+  update: async (id, data) => {
+    const response = await api.put(`/appointment-types/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/appointment-types/${id}`);
+    return response.data;
+  },
+};
+

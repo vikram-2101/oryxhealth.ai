@@ -32,7 +32,7 @@ export const getCustomers = async (req, res, next) => {
     const customersWithCounts = await Promise.all(
       customers.map(async (customer) => {
         const institutionCount = await Institution.countDocuments({
-          customerAccount: customer._id,
+          accountId: customer._id,
         });
         return {
           ...customer.toObject(),
@@ -70,7 +70,7 @@ export const getCustomer = async (req, res, next) => {
     }
 
     const institutions = await Institution.find({
-      customerAccount: customer._id,
+      accountId: customer._id,
     });
 
     res.json({
@@ -145,7 +145,7 @@ export const deleteCustomer = async (req, res, next) => {
 
     // Check if customer has institutions
     const institutionCount = await Institution.countDocuments({
-      customerAccount: customer._id,
+      accountId: customer._id,
     });
 
     if (institutionCount > 0) {

@@ -10,9 +10,20 @@ export const getInstitutions = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || '';
     const status = req.query.status;
-    const customerAccount = req.query.customerAccount;
+    const accountId = req.query.accountId;
 
     const query = {};
+
+    // ── Scope Filter ─────────────────────────────────────────────────────
+    if (req.userRole === 'account') {
+      query.accountId = req.accountId;
+    } else if (req.userRole === 'institution') {
+      query._id = req.institutionId;
+    } else if (accountId) {
+      // Super Admin filtering by account
+      query.accountId = accountId;
+    }
+
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -22,13 +33,10 @@ export const getInstitutions = async (req, res, next) => {
     if (status) {
       query.status = status;
     }
-    if (customerAccount) {
-      query.customerAccount = customerAccount;
-    }
 
     const total = await Institution.countDocuments(query);
     const institutions = await Institution.find(query)
-      .populate('customerAccount', 'name')
+      .populate('accountId', 'name')
       .limit(limit)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
@@ -67,14 +75,23 @@ export const getInstitutions = async (req, res, next) => {
 // @access  Private
 export const getInstitution = async (req, res, next) => {
   try {
-    const institution = await Institution.findById(req.params.id).populate(
-      'customerAccount',
+    const query = { _id: req.params.id };
+
+    // ── Scope Check ──────────────────────────────────────────────────────
+    if (req.userRole === 'account') {
+      query.accountId = req.accountId;
+    } else if (req.userRole === 'institution') {
+      query._id = req.institutionId;
+    }
+
+    const institution = await Institution.findOne(query).populate(
+      'accountId',
       'name'
     );
 
     if (!institution) {
       res.status(404);
-      throw new Error('Institution not found');
+      throw new Error('Institution not found or unauthorized');
     }
 
     const users = await User.find({ institution: institution._id });
@@ -96,8 +113,15 @@ export const getInstitution = async (req, res, next) => {
 // @access  Private
 export const createInstitution = async (req, res, next) => {
   try {
-    const institution = await Institution.create(req.body);
-    await institution.populate('customerAccount', 'name');
+    const institutionData = { ...req.body };
+
+    // ── Forced Scope ──────────────────────────────────────────────────────
+    if (req.userRole === 'account') {
+      institutionData.accountId = req.accountId;
+    }
+
+    const institution = await Institution.create(institutionData);
+    await institution.populate('accountId', 'name');
 
     res.status(201).json({
       success: true,
@@ -114,6 +138,27 @@ export const createInstitution = async (req, res, next) => {
 // @access  Private
 export const updateInstitution = async (req, res, next) => {
   try {
+    const query = { _id: req.params.id };
+
+    // ── Scope Check ──────────────────────────────────────────────────────
+    if (req.userRole === 'account') {
+      query.accountId = req.accountId;
+    } else if (req.userRole === 'institution') {
+      query._id = req.institutionId;
+    }
+
+    // First find to check ownership
+    const existingInstitution = await Institution.findOne(query);
+    if (!existingInstitution) {
+      res.status(404);
+      throw new Error('Institution not found or unauthorized');
+    }
+
+    // Prevent changing the accountId unless Super Admin
+    if (req.userRole !== 'super_admin') {
+      delete req.body.accountId;
+    }
+
     const institution = await Institution.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -121,12 +166,7 @@ export const updateInstitution = async (req, res, next) => {
         new: true,
         runValidators: true,
       }
-    ).populate('customerAccount', 'name');
-
-    if (!institution) {
-      res.status(404);
-      throw new Error('Institution not found');
-    }
+    ).populate('accountId', 'name');
 
     res.json({
       success: true,
@@ -143,11 +183,18 @@ export const updateInstitution = async (req, res, next) => {
 // @access  Private
 export const deleteInstitution = async (req, res, next) => {
   try {
-    const institution = await Institution.findById(req.params.id);
+    const query = { _id: req.params.id };
+
+    // ── Scope Check ──────────────────────────────────────────────────────
+    if (req.userRole === 'account') {
+      query.accountId = req.accountId;
+    }
+
+    const institution = await Institution.findOne(query);
 
     if (!institution) {
       res.status(404);
-      throw new Error('Institution not found');
+      throw new Error('Institution not found or unauthorized');
     }
 
     // Check if institution has users
@@ -176,17 +223,24 @@ export const deleteInstitution = async (req, res, next) => {
 // @access  Private
 export const toggleInstitutionStatus = async (req, res, next) => {
   try {
-    const institution = await Institution.findById(req.params.id);
+    const query = { _id: req.params.id };
+
+    // ── Scope Check ──────────────────────────────────────────────────────
+    if (req.userRole === 'account') {
+      query.accountId = req.accountId;
+    }
+
+    const institution = await Institution.findOne(query);
 
     if (!institution) {
       res.status(404);
-      throw new Error('Institution not found');
+      throw new Error('Institution not found or unauthorized');
     }
 
     institution.status =
       institution.status === 'active' ? 'inactive' : 'active';
     await institution.save();
-    await institution.populate('customerAccount', 'name');
+    await institution.populate('accountId', 'name');
 
     res.json({
       success: true,

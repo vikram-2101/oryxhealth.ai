@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const customerSchema = new mongoose.Schema(
   {
@@ -21,6 +22,7 @@ const customerSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Password is required'],
+      select: false,
     },
     welcomeMessage: {
       type: String,
@@ -81,8 +83,33 @@ const customerSchema = new mongoose.Schema(
 customerSchema.virtual('institutions', {
   ref: 'Institution',
   localField: '_id',
-  foreignField: 'customerAccount',
+  foreignField: 'accountId',
 });
+
+/* =========================================
+   PASSWORD HASHING
+========================================= */
+customerSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+
+// Allow partial updates (findOneAndUpdate) to also hash the password
+customerSchema.pre('findOneAndUpdate', async function (next) {
+  const update = this.getUpdate();
+  if (update.password) {
+    update.password = await bcrypt.hash(update.password, 12);
+  } else if (update.$set && update.$set.password) {
+    update.$set.password = await bcrypt.hash(update.$set.password, 12);
+  }
+  this.setUpdate(update);
+  next();
+});
+
+customerSchema.methods.comparePassword = async function (enteredPassword) {
+  return bcrypt.compare(enteredPassword, this.password);
+};
 
 const Customer = mongoose.model('Customer', customerSchema);
 

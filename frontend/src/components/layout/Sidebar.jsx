@@ -9,21 +9,83 @@ import {
   Layers,
   ChevronLeft,
   ChevronRight,
+  LogOut,
+  FolderTree,
+  Briefcase,
+  CalendarDays,
 } from "lucide-react";
-
+import { useAuth } from "../../context/AuthContext";
 import logo from "../../assets/logo.png";
 
 export const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const menuItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-    { icon: Building2, label: "Customers", path: "/customers" },
-    { icon: Building, label: "Institutions", path: "/institutions" },
-    { icon: Users, label: "Users", path: "/users" },
-    { icon: Layers, label: "Panels", path: "/panels" },
-  ];
+  const getMenuItems = () => {
+    const baseItems = [
+      { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+    ];
+
+    if (user?.role === "super_admin") {
+      return [
+        ...baseItems,
+        { icon: Building2, label: "Customers", path: "/customers" },
+        { icon: Building, label: "Institutions", path: "/institutions" },
+        { icon: Users, label: "Users", path: "/users" },
+        { icon: Layers, label: "Panels", path: "/panels" },
+        { icon: Briefcase, label: "Programs", path: "/programs" },
+        { icon: CalendarDays, label: "Appointments", path: "/appointment-types" },
+      ];
+    }
+
+    if (user?.role === "account") {
+      return [
+        ...baseItems,
+        { icon: Building, label: "Institutions", path: "/institutions" },
+        { icon: Users, label: "Users", path: "/users" },
+        { icon: Layers, label: "Panels", path: "/panels" },
+        { icon: FolderTree, label: "Category", path: "/categories" },
+        { icon: Briefcase, label: "Programs", path: "/programs" },
+        { icon: CalendarDays, label: "Appointments", path: "/appointment-types" },
+      ];
+    }
+
+    if (user?.role === "institution") {
+      return [
+        ...baseItems,
+        { icon: Users, label: "Users", path: "/users" },
+        { icon: Layers, label: "Panels", path: "/panels" },
+      ];
+    }
+
+    return baseItems;
+  };
+
+  const menuItems = getMenuItems();
+
+  const getRoleLabel = () => {
+    switch (user?.role) {
+      case "super_admin":
+        return "Super Admin";
+      case "account":
+        return "Account Admin";
+      case "institution":
+        return "Institution Admin";
+      default:
+        return "Admin";
+    }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "AD";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <motion.div
@@ -71,22 +133,30 @@ export const Sidebar = () => {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-white/20">
+      <div className="p-4 border-t border-white/20 space-y-2">
         <div className="flex items-center gap-3 px-3 py-2">
           <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-            SA
+            {getInitials(user?.name)}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-900 truncate">
-                Super Admin
+                {user?.name || "Admin"}
               </p>
               <p className="text-xs text-slate-500 truncate">
-                admin@oxyhealth.ai
+                {getRoleLabel()}
               </p>
             </div>
           )}
         </div>
+        
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 transition-all"
+        >
+          <LogOut className="w-5 h-5" />
+          {!collapsed && <span className="font-medium">Logout</span>}
+        </button>
       </div>
     </motion.div>
   );

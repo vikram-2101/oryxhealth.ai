@@ -6,7 +6,11 @@ import { customerService } from '../../services';
 
 export const InstitutionForm = ({ institution, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
-    accountId: institution?.accountId?._id || institution?.customerAccount?._id || institution?.accountId || institution?.customer || '',
+    accountId: 
+      (institution?.accountId?._id || institution?.accountId) || 
+      (institution?.customerAccount?._id || institution?.customerAccount) || 
+      (institution?.customer?._id || institution?.customer) || 
+      '',
     name: institution?.name || '',
     username: institution?.username || '',
     password: '', 

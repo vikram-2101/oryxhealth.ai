@@ -29,6 +29,7 @@ import {
 } from "recharts";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { statsService, userService } from "../services";
+import { useAuth } from "../context/AuthContext";
 
 const container = {
   hidden: { opacity: 0 },
@@ -51,7 +52,9 @@ const PIE_COLORS = [
 ];
 
 export const DashboardPage = () => {
-  const navigate = useNavigate();
+   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "super_admin";
   const [stats, setStats] = useState(null);
   const [recentUsers, setRecentUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -89,6 +92,7 @@ export const DashboardPage = () => {
 
   const kpiCards = [
     {
+      id: "customers",
       label: "Total Customers",
       value: stats?.totalCustomers || 0,
       change: +12.5,
@@ -98,8 +102,10 @@ export const DashboardPage = () => {
       iconBg: "bg-primary/10",
       iconColor: "text-primary",
       path: "/customers",
+      show: isSuperAdmin,
     },
     {
+      id: "institutions",
       label: "Total Institutions",
       value: stats?.totalInstitutions || 0,
       change: +8.2,
@@ -109,8 +115,10 @@ export const DashboardPage = () => {
       iconBg: "bg-emerald-500/10",
       iconColor: "text-emerald-600",
       path: "/institutions",
+      show: true,
     },
     {
+      id: "users",
       label: "Total Users",
       value: stats?.totalUsers || 0,
       change: -2.4,
@@ -120,8 +128,10 @@ export const DashboardPage = () => {
       iconBg: "bg-violet-500/10",
       iconColor: "text-violet-600",
       path: "/users",
+      show: true,
     },
     {
+      id: "panels",
       label: "Total Panels",
       value: stats?.totalPanels || 0,
       change: +5.0,
@@ -131,8 +141,9 @@ export const DashboardPage = () => {
       iconBg: "bg-amber-500/10",
       iconColor: "text-amber-600",
       path: "/panels",
+      show: true,
     },
-  ];
+  ].filter(card => card.show);
 
   const growthData = [
     { month: "Jul", users: 14, institutions: 5 },

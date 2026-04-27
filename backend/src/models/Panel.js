@@ -13,6 +13,16 @@ const panelSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    accountId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Customer',
+      required: [true, 'Account is required'],
+    },
+    institutionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Institution',
+      required: [true, 'Institution is required'],
+    },
     status: {
       type: String,
       enum: ['active', 'inactive'],

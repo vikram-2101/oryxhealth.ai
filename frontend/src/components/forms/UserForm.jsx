@@ -1,10 +1,21 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { FormInput } from "../ui/FormInput";
 import { FormSelect } from "../ui/FormSelect";
-import { institutionService } from "../../services";
-import { Upload, X, Edit, MapPin } from "lucide-react";
+import { institutionService, customerService } from "../../services";
+import {
+  Upload,
+  X,
+  Edit,
+  MapPin,
+  Shield,
+  User as UserIcon,
+  Phone,
+  Mail,
+  Lock,
+} from "lucide-react";
 import { GetCountries, GetState, GetCity } from "react-country-state-city";
+import { useAuth } from "../../context/AuthContext";
 
 const ROLE_OPTIONS = [
   { value: "Doctor", label: "Doctor" },
@@ -22,11 +33,16 @@ const SEX_OPTIONS = [
   { value: "Male", label: "Male" },
   { value: "Female", label: "Female" },
   { value: "Other", label: "Other" },
+  { value: "Any", label: "Any" },
 ];
 
 export const UserForm = ({ user, onSubmit, onCancel }) => {
+  const { user: currentUser } = useAuth();
+  const isSuperAdmin = currentUser?.role === "super_admin";
+
   const [formData, setFormData] = useState({
-    name: user?.name || "",
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
     email: user?.email || "",
     phone: user?.phone || "",
     country: user?.country || "India",
@@ -36,13 +52,12 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
     role: user?.role || "",
     admin: user?.admin || "none",
     sex: user?.sex || "",
-    institution: user?.institution?._id || "",
+    accountId: user?.accountId?._id || user?.accountId || "",
+    institution: user?.institution?._id || user?.institution || "",
     institutionAccess: user?.institutionAccess?.map((i) => i._id || i) || [],
     registrationNumber: user?.registrationNumber || "",
     specialization: user?.specialization || "",
     designation: user?.designation || "",
-    photo: user?.photo || "",
-    signatureImage: user?.signatureImage || "",
     password: "",
   });
 
@@ -54,16 +69,87 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
   const [signaturePreview, setSignaturePreview] = useState(
     user?.signatureImage || null,
   );
-  const [institutions, setInstitutions] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [filteredInstitutions, setFilteredInstitutions] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState({ photo: null, signatureImage: null });
-  const [loadingInstitutions, setLoadingInstitutions] = useState(true);
+  const [loadingLists, setLoadingLists] = useState(true);
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
-    fetchInstitutions();
+    fetchLists();
+    loadGeoData();
+  }, [user]);
 
+  const fetchInstitutionsByAccount = async (accId) => {
+    if (!accId) {
+      setFilteredInstitutions([]);
+      return;
+    }
+    try {
+      // Fetch with a large limit to avoid pagination issues in dropdowns
+      const response = await institutionService.getAll({
+        accountId: accId,
+        limit: 1000,
+      });
+      setFilteredInstitutions(
+        response.data.institutions || response.data || [],
+      );
+    } catch (error) {
+      console.error("Error fetching institutions for account:", error);
+    }
+  };
+
+  const fetchLists = async () => {
+    try {
+      setLoadingLists(true);
+      const promises = [];
+
+      // If we're editing or have an account selected, fetch its institutions
+      const accId =
+        formData.accountId || user?.accountId?._id || user?.accountId;
+      if (accId) {
+        promises.push(
+          institutionService.getAll({ accountId: accId, limit: 1000 }),
+        );
+      } else if (!isSuperAdmin && currentUser?.accountId) {
+        promises.push(
+          institutionService.getAll({
+            accountId: currentUser.accountId,
+            limit: 1000,
+          }),
+        );
+      }
+
+      if (isSuperAdmin) {
+        promises.push(customerService.getAll());
+      }
+
+      const results = await Promise.all(promises);
+
+      if (accId || (!isSuperAdmin && currentUser?.accountId)) {
+        const instRes = results[0];
+        setFilteredInstitutions(
+          instRes.data.institutions || instRes.data || [],
+        );
+
+        if (isSuperAdmin) {
+          const custRes = results[1];
+          setCustomers(custRes.data.customers || custRes.data || []);
+        }
+      } else if (isSuperAdmin) {
+        const custRes = results[0];
+        setCustomers(custRes.data.customers || custRes.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching lists:", error);
+    } finally {
+      setLoadingLists(false);
+    }
+  };
+
+  const loadGeoData = () => {
     GetCountries().then((result) => {
       if (!result) return;
       const filtered = result.filter((c) =>
@@ -71,14 +157,14 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
       );
       setCountriesList(filtered);
 
-      const countryName = user?.country || "India";
+      const countryName = formData.country || "India";
       const country = filtered.find((c) => c.name === countryName);
 
       if (country) {
         GetState(country.id).then((states) => {
           setStateList(states);
-          if (user?.state) {
-            const state = states.find((s) => s.name === user.state);
+          if (formData.state) {
+            const state = states.find((s) => s.name === formData.state);
             if (state) {
               GetCity(country.id, state.id).then((cities) => {
                 setCityList(cities);
@@ -88,26 +174,13 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
         });
       }
     });
-  }, []);
-
-  const fetchInstitutions = async () => {
-    try {
-      const response = await institutionService.getAll();
-
-      setInstitutions(response.data.institutions || response.data || []);
-    } catch (error) {
-      console.error("Error fetching institutions:", error);
-    } finally {
-      setLoadingInstitutions(false);
-    }
   };
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Full name is required";
-    }
+    if (!formData.firstName.trim())
+      newErrors.firstName = "First name is required";
+    if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
 
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
@@ -115,47 +188,28 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
       newErrors.email = "Invalid email format";
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone is required";
+    if (!formData.phone.trim()) newErrors.phone = "Phone is required";
+    if (!formData.role) newErrors.role = "Role is required";
+    if (!formData.sex) newErrors.sex = "Sex is required";
+
+    if (isSuperAdmin && !formData.accountId) {
+      newErrors.accountId = "Customer/Account is required";
     }
 
-    if (!formData.address.trim()) {
-      newErrors.address = "Address is required";
-    }
+    if (!formData.institution)
+      newErrors.institution = "Primary institution is required";
 
-    if (!formData.role) {
-      newErrors.role = "Role is required";
-    }
-
-    if (!formData.institution) {
-      newErrors.institution = "Institution is required";
-    }
-
-    // Doctor-specific validation
     if (formData.role === "Doctor") {
-      if (!formData.registrationNumber.trim()) {
-        newErrors.registrationNumber =
-          "Registration number is required for doctors";
-      }
-      if (!formData.specialization.trim()) {
-        newErrors.specialization = "Specialization is required for doctors";
-      }
-      if (!formData.designation.trim()) {
-        newErrors.designation = "Designation is required for doctors";
-      }
+      if (!formData.registrationNumber.trim())
+        newErrors.registrationNumber = "Registration number required";
+      if (!formData.specialization.trim())
+        newErrors.specialization = "Specialization required";
+      if (!formData.designation.trim())
+        newErrors.designation = "Designation required";
     }
 
-    // Password validation
     if (!user && !formData.password) {
-      newErrors.password = "Password is required for new users";
-    } else if (
-      formData.password &&
-      !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>‎,.?\/\\|`~]).{8,}$/.test(
-        formData.password,
-      )
-    ) {
-      newErrors.password =
-        "Password must be at least 8 chars, including letters, numbers, and special characters";
+      newErrors.password = "Password is required";
     }
 
     setErrors(newErrors);
@@ -164,52 +218,49 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitError("");
-
     if (!validateForm()) return;
 
     setIsSubmitting(true);
     try {
-      // Create FormData for multipart submission
       const formDataToSend = new FormData();
 
-      // Append all fields from formData state
+      // Concat name for backward compatibility if needed, but we now send firstName/lastName
       Object.keys(formData).forEach((key) => {
-        // Skip images if we're sending them as files
-        if (key !== "photo" && key !== "signatureImage") {
-          if (Array.isArray(formData[key])) {
-            formDataToSend.append(key, JSON.stringify(formData[key]));
-          } else {
-            formDataToSend.append(key, formData[key] || "");
-          }
+        if (Array.isArray(formData[key])) {
+          formDataToSend.append(key, JSON.stringify(formData[key]));
+        } else {
+          formDataToSend.append(key, formData[key] || "");
         }
       });
 
-      // Append actual files if they were selected
-      if (files.photo) {
-        formDataToSend.append("photo", files.photo);
-      }
-      if (files.signatureImage) {
-        formDataToSend.append("signatureImage", files.signatureImage);
+      if (files.photo) formDataToSend.append("photo", files.photo);
+      else if (
+        photoPreview &&
+        typeof photoPreview === "string" &&
+        photoPreview.startsWith("data:")
+      ) {
+        formDataToSend.append("photo", photoPreview);
+      } else if (!photoPreview && user?.photo) {
+        // User explicitly cleared the photo
+        formDataToSend.append("photo", "");
       }
 
-      // Remove empty password on update
-      if (user && !formData.password) {
-        formDataToSend.delete("password");
+      if (files.signatureImage)
+        formDataToSend.append("signatureImage", files.signatureImage);
+      else if (
+        signaturePreview &&
+        typeof signaturePreview === "string" &&
+        signaturePreview.startsWith("data:")
+      ) {
+        formDataToSend.append("signatureImage", signaturePreview);
+      } else if (!signaturePreview && user?.signatureImage) {
+        // User explicitly cleared the signature
+        formDataToSend.append("signatureImage", "");
       }
 
       await onSubmit(formDataToSend);
     } catch (error) {
-      console.error("Form submission error:", error);
-      if (error.response) {
-        console.error("Error Response Data:", error.response.data);
-        console.error("Error Response Status:", error.response.status);
-      }
-      setSubmitError(
-        error.response?.data?.message ||
-          error.message ||
-          "An error occurred while saving the user. Please try again.",
-      );
+      setSubmitError(error.response?.data?.message || "Failed to save user");
     } finally {
       setIsSubmitting(false);
     }
@@ -217,501 +268,511 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setSubmitError("");
-
     setFormData((prev) => {
-      const newData = {
-        ...prev,
-        [name]: value,
-      };
+      const newData = { ...prev, [name]: value };
 
-      // If changing primary institution, remove it from additional access
-      if (name === "institution" && value) {
-        newData.institutionAccess = (prev.institutionAccess || []).filter(
-          (id) => id !== value,
-        );
+      if (name === "accountId") {
+        newData.institution = "";
+        newData.institutionAccess = [];
+        fetchInstitutionsByAccount(value);
       }
 
       return newData;
     });
 
-    // Clear registration number if role changes from Doctor
-    if (name === "role" && value !== "Doctor") {
-      setFormData((prev) => ({
-        ...prev,
-        registrationNumber: "",
-        specialization: "",
-        designation: "",
-      }));
-    }
-
-    setErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[name];
-      return newErrors;
-    });
-  };
-
-  const handleCountryChange = (e) => {
-    const countryName = e.target.value;
-    const country = countriesList.find((c) => c.name === countryName);
-
-    setFormData((prev) => ({
-      ...prev,
-      country: countryName,
-      state: "",
-      city: "",
-    }));
-
-    if (country) {
-      GetState(country.id).then((states) => {
-        setStateList(states);
+    if (errors[name]) {
+      setErrors((prev) => {
+        const n = { ...prev };
+        delete n[name];
+        return n;
       });
-    } else {
-      setStateList([]);
     }
-    setCityList([]);
-  };
-
-  const handleStateChange = (e) => {
-    const stateName = e.target.value;
-    const country = countriesList.find((c) => c.name === formData.country);
-    const state = stateList.find((s) => s.name === stateName);
-
-    setFormData((prev) => ({
-      ...prev,
-      state: stateName,
-      city: "",
-    }));
-
-    if (country && state) {
-      GetCity(country.id, state.id).then((cities) => {
-        setCityList(cities);
-      });
-    } else {
-      setCityList([]);
-    }
-  };
-
-  const handleInstitutionAccessToggle = (instId) => {
-    setFormData((prev) => {
-      const currentAccess = prev.institutionAccess || [];
-      if (currentAccess.includes(instId)) {
-        return {
-          ...prev,
-          institutionAccess: currentAccess.filter((id) => id !== instId),
-        };
-      } else {
-        return {
-          ...prev,
-          institutionAccess: [...currentAccess, instId],
-        };
-      }
-    });
   };
 
   const handleImageChange = (e, field) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
+      if (file.size > (field === "photo" ? 2 : 5) * 1024 * 1024) {
         setSubmitError(
-          `${field === "photo" ? "Photo" : "Signature"} size should be less than 2MB`,
+          `File too large. Max ${field === "photo" ? "2MB" : "5MB"}`,
         );
         return;
       }
-
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64String = reader.result;
         setFiles((prev) => ({ ...prev, [field]: file }));
-        if (field === "photo") setPhotoPreview(base64String);
-        if (field === "signatureImage") setSignaturePreview(base64String);
+        if (field === "photo") setPhotoPreview(reader.result);
+        if (field === "signatureImage") setSignaturePreview(reader.result);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const institutionOptions = institutions
-    .filter((i) => i.status === "active")
-    .map((i) => ({
-      value: i._id,
-      label: i.name,
-    }));
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-6 max-h-[85vh] overflow-y-auto px-4 pb-10 scrollbar-thin"
+    >
       {submitError && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm font-medium"
-        >
+        <div className="p-4 bg-red-50 border border-red-100 text-red-700 rounded-xl text-sm font-medium">
           {submitError}
-        </motion.div>
+        </div>
       )}
 
-      {/* Profile Photo Section (OryxT Pattern) */}
-      <div className="flex flex-col items-center justify-center p-4 border-b border-slate-100 mb-6">
-        <div className="relative group">
-          <div className="w-24 h-24 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden border-2 border-dashed border-slate-200 group-hover:border-primary-400 transition-colors">
-            {photoPreview ? (
-              <img
-                src={photoPreview}
-                alt="Profile"
-                className="w-full h-full object-cover"
+      {/* Section 1: Personal Information */}
+      <div className="bg-white rounded-[15px] p-6 shadow-sm border border-slate-200 space-y-6">
+        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">Personal Information</h3>
+        
+        {/* Media: Photo & Signature */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Profile Photo Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">
+              Profile Photo (Optional)
+            </label>
+            <label
+              className={`relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed ${errors.photo ? "border-red-300" : "border-slate-200 hover:border-primary-300 hover:bg-primary-50/30"} rounded-xl cursor-pointer transition-all group overflow-hidden`}
+            >
+              {photoPreview ? (
+                <div className="relative w-full h-full flex items-center justify-center p-2 bg-white">
+                  <img
+                    src={photoPreview}
+                    alt="Profile Preview"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPhotoPreview(null);
+                      setFiles((prev) => ({ ...prev, photo: null }));
+                    }}
+                    className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
+                  <Upload className="w-8 h-8 text-slate-400 group-hover:text-primary-500 mb-2 transition-colors" />
+                  <p className="text-xs font-medium text-slate-700 group-hover:text-primary-600">
+                    Upload photo
+                  </p>
+                </div>
+              )}
+              <input
+                type="file"
+                className="hidden"
+                accept="image/png, image/jpeg"
+                onChange={(e) => handleImageChange(e, "photo")}
               />
-            ) : (
-              <Upload className="w-8 h-8 text-slate-400" />
-            )}
+            </label>
           </div>
-          <input
-            type="file"
-            id="user-photo"
-            className="hidden"
-            accept="image/*"
-            onChange={(e) => handleImageChange(e, "photo")}
+
+          {/* Signature Image Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">
+              Digital Signature (Optional)
+            </label>
+            <label
+              className={`relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed ${errors.signatureImage ? "border-red-300" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"} rounded-xl cursor-pointer transition-all group overflow-hidden`}
+            >
+              {signaturePreview ? (
+                <div className="relative w-full h-full flex items-center justify-center p-2 bg-white">
+                  <img
+                    src={signaturePreview}
+                    alt="Signature"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setSignaturePreview(null);
+                      setFiles((prev) => ({ ...prev, signatureImage: null }));
+                    }}
+                    className="absolute top-2 right-2 p-1.5 bg-red-100/90 text-red-600 rounded-full hover:bg-red-200 shadow-sm"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
+                  <Upload className="w-8 h-8 text-slate-400 group-hover:text-slate-600 mb-2 transition-colors" />
+                  <p className="text-xs font-medium text-slate-700 group-hover:text-slate-800">
+                    Upload signature
+                  </p>
+                </div>
+              )}
+              <input
+                type="file"
+                className="hidden"
+                accept="image/png, image/jpeg"
+                onChange={(e) => handleImageChange(e, "signatureImage")}
+              />
+            </label>
+          </div>
+        </div>
+
+        {/* Row: First Name, Last Name, Sex */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <FormInput
+            label="First Name"
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            error={errors.firstName}
+            required
+            placeholder="First Name"
           />
-          <label
-            htmlFor="user-photo"
-            className="absolute -bottom-2 -right-2 p-2 bg-primary-600 text-white rounded-lg shadow-lg cursor-pointer hover:bg-primary-700 transition-colors"
-          >
-            <Edit className="w-4 h-4" />
-          </label>
-        </div>
-        <div className="mt-3 text-center">
-          <span className="text-sm font-medium text-slate-900">
-            User Profile Photo
-          </span>
-          <p className="text-xs text-slate-500">JPG, PNG or WebP (Max 2MB)</p>
+          <FormInput
+            label="Last Name"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            error={errors.lastName}
+            required
+            placeholder="Last Name"
+          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Sex <span className="text-red-500">*</span></label>
+            <div className="flex p-1 bg-slate-100 rounded-[12px] w-full border border-slate-200 shadow-inner h-[46px]">
+              {["Male", "Female", "Other", "Any"].map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => handleChange({ target: { name: 'sex', value: option } })}
+                  className={`flex-1 rounded-[10px] text-xs font-semibold transition-all duration-300 ${formData.sex === option
+                    ? "bg-white text-primary-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                    }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            {errors.sex && <p className="text-xs text-red-600">{errors.sex}</p>}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormInput
-          label="Full Name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          error={errors.name}
-          required
-          placeholder="e.g., Dr. Alan Hughes"
-        />
+      {/* Section 2: User Role */}
+      <div className="bg-white rounded-[15px] p-6 shadow-sm border border-slate-200 space-y-6">
+        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">User Role</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormSelect
+            label="Professional Role"
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            options={ROLE_OPTIONS}
+            error={errors.role}
+            required
+            placeholder="Select Role"
+          />
+          {/* Designation moved to Doctor fields below */}
+        </div>
 
-        <FormInput
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          error={errors.email}
-          required
-          placeholder="e.g., alan@hospital.com"
-        />
+        {/* Conditional Doctor Fields */}
+        <AnimatePresence>
+          {formData.role === "Doctor" && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 overflow-hidden"
+            >
+              <FormInput
+                label="Designation"
+                name="designation"
+                value={formData.designation}
+                onChange={handleChange}
+                error={errors.designation}
+                required
+                placeholder="e.g. Senior Surgeon"
+              />
+              <FormInput
+                label="Registration Number"
+                name="registrationNumber"
+                value={formData.registrationNumber}
+                onChange={handleChange}
+                error={errors.registrationNumber}
+                required
+                placeholder="Medical Reg. Number"
+              />
+              <FormInput
+                label="Specialization"
+                name="specialization"
+                value={formData.specialization}
+                onChange={handleChange}
+                error={errors.specialization}
+                required
+                placeholder="e.g. Cardiologist"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormInput
-          label="Phone"
-          name="phone"
-          type="tel"
-          value={formData.phone}
-          onChange={handleChange}
-          error={errors.phone}
-          required
-          placeholder="e.g., +1 555-1001"
-        />
+      {/* Section 3: Account & Institution Details */}
+      <div className="bg-white rounded-[15px] p-6 shadow-sm border border-slate-200 space-y-6">
+        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">Account & Institution Details</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700">Account / Customer</label>
+            {isSuperAdmin ? (
+              <select
+                name="accountId"
+                value={formData.accountId}
+                onChange={handleChange}
+                className={`w-full px-4 py-2.5 rounded-xl border transition-all ${
+                  errors.accountId ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-primary-500'
+                } focus:outline-none text-sm`}
+              >
+                <option value="">Select Account</option>
+                {customers.map((c) => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </select>
+            ) : (
+              <div className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 font-medium h-[46px] flex items-center">
+                {customers.find(c => c._id === formData.accountId)?.name || user?.accountId?.name || "Access Restricted"}
+              </div>
+            )}
+            {errors.accountId && <p className="text-xs text-red-600">{errors.accountId}</p>}
+          </div>
 
+          <FormSelect
+            label="Primary Institution"
+            name="institution"
+            value={formData.institution}
+            onChange={handleChange}
+            options={filteredInstitutions.map((i) => ({
+              value: i._id,
+              label: i.name,
+            }))}
+            error={errors.institution}
+            required
+            placeholder={
+              !formData.accountId && isSuperAdmin
+                ? "Select an account first"
+                : "Select Institution"
+            }
+            disabled={!formData.accountId}
+          />
+        </div>
+
+        {/* Additional Access */}
+        <AnimatePresence>
+          {formData.institution && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-3 pt-2 border-t border-slate-100"
+            >
+              <label className="block text-sm font-bold text-slate-700 uppercase tracking-wider">
+                Additional Institution Access
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-4 border border-slate-200 rounded-2xl bg-slate-50/50 shadow-inner">
+                {filteredInstitutions
+                  .filter((i) => i._id !== formData.institution)
+                  .map((inst) => (
+                    <label
+                      key={inst._id}
+                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-slate-200 group"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.institutionAccess.includes(inst._id)}
+                        onChange={() => {
+                          const access = formData.institutionAccess.includes(inst._id)
+                            ? formData.institutionAccess.filter(
+                                (id) => id !== inst._id,
+                              )
+                            : [...formData.institutionAccess, inst._id];
+                          setFormData((prev) => ({
+                            ...prev,
+                            institutionAccess: access,
+                          }));
+                        }}
+                        className="w-5 h-5 rounded-lg border-slate-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className="text-sm font-medium text-slate-600 group-hover:text-primary-700">
+                        {inst.name}
+                      </span>
+                    </label>
+                  ))}
+                {filteredInstitutions.length <= 1 && (
+                  <p className="text-sm text-slate-400 col-span-2 text-center py-4 italic">
+                    No other institutions available for this account
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Section 4: Admin Access */}
+      <div className="bg-white rounded-[15px] p-6 shadow-sm border border-slate-200 space-y-6">
+        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">Admin Portal Access</h3>
+        <div className="space-y-1">
+          <div className="flex p-1 bg-slate-100 rounded-[12px] w-full border border-slate-200 shadow-inner h-[50px]">
+            {[
+              { value: "none", label: "None" },
+              { value: "account", label: "Account Admin" },
+              { value: "institution", label: "Institution Admin" }
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleChange({ target: { name: 'admin', value: option.value } })}
+                className={`flex-1 rounded-[10px] text-xs font-semibold transition-all duration-300 ${formData.admin === option.value
+                  ? "bg-white text-primary-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+                  }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-slate-400 mt-2 italic px-2">
+            Determines if this user can login to the oxyhealth.ai admin dashboard.
+          </p>
+        </div>
+      </div>
+
+      {/* Section 5: Login Details */}
+      <div className="bg-white rounded-[15px] p-6 shadow-sm border border-slate-200 space-y-6">
+        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">Login Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormInput
+            label="Email Address"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            error={errors.email}
+            required
+            placeholder="example@email.com"
+          />
+          <FormInput
+            label="Phone Number"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            error={errors.phone}
+            required
+            placeholder="1234567890"
+          />
+        </div>
         <FormInput
-          label={
-            user ? "New Password (leave blank to keep current)" : "Password"
-          }
+          label={user ? "New Password (Optional)" : "Account Password"}
           name="password"
           type="password"
           value={formData.password}
           onChange={handleChange}
           error={errors.password}
           required={!user}
-          placeholder="Min. 8 chars, 1 letter, 1 number, 1 special char"
+          placeholder="Min 8 chars, 1 number, 1 special char"
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <FormSelect
-          label="Role"
-          name="role"
-          value={formData.role}
-          onChange={handleChange}
-          options={ROLE_OPTIONS}
-          error={errors.role}
-          required
-        />
-        <FormSelect
-          label="Admin Access Portal"
-          name="admin"
-          value={formData.admin}
-          onChange={handleChange}
-          options={ADMIN_OPTIONS}
-        />
-        <FormSelect
-          label="Sex"
-          name="sex"
-          value={formData.sex}
-          onChange={handleChange}
-          options={SEX_OPTIONS}
-          error={errors.sex}
-          placeholder="Select sex"
-        />
-      </div>
-
-      {/* Address Details Section */}
-      <div className="border border-slate-200 rounded-2xl p-6 bg-slate-50/50 space-y-6">
-        <div className="flex items-center gap-2 mb-2">
-          <MapPin className="w-5 h-5 text-primary-600" />
-          <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider">
-            Address Details
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700 ml-1">
-              Country <span className="text-red-500">*</span>
-            </label>
+      {/* Section 6: Address Information */}
+      <div className="bg-white rounded-[15px] p-6 shadow-sm border border-slate-200 space-y-6">
+        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">Address Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
             <select
               name="country"
               value={formData.country}
-              onChange={handleCountryChange}
-              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none"
+              onChange={(e) => {
+                const country = countriesList.find((c) => c.name === e.target.value);
+                setFormData((prev) => ({
+                  ...prev,
+                  country: e.target.value,
+                  state: "",
+                  city: "",
+                }));
+                if (country) GetState(country.id).then(setStateList);
+              }}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 transition-all outline-none text-sm"
             >
-              <option value="">
-                {countriesList.length === 0
-                  ? "Loading countries..."
-                  : "Select Country"}
-              </option>
               {countriesList.map((c) => (
-                <option key={c.id} value={c.name}>
-                  {c.name}
-                </option>
+                <option key={c.id} value={c.name}>{c.name}</option>
               ))}
             </select>
           </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700 ml-1">
-              State <span className="text-red-500">*</span>
-            </label>
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
             <select
               name="state"
               value={formData.state}
-              onChange={handleStateChange}
-              disabled={!formData.country || stateList.length === 0}
-              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
+              onChange={(e) => {
+                const country = countriesList.find((c) => c.name === formData.country);
+                const state = stateList.find((s) => s.name === e.target.value);
+                setFormData((prev) => ({
+                  ...prev,
+                  state: e.target.value,
+                  city: "",
+                }));
+                if (country && state) GetCity(country.id, state.id).then(setCityList);
+              }}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 transition-all outline-none text-sm disabled:opacity-50"
+              disabled={!formData.country}
             >
-              <option value="">
-                {formData.country && stateList.length === 0
-                  ? "Loading states..."
-                  : "Select State"}
-              </option>
+              <option value="">Select State</option>
               {stateList.map((s) => (
-                <option key={s.id} value={s.name}>
-                  {s.name}
-                </option>
+                <option key={s.id} value={s.name}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
+            <select
+              name="city"
+              value={formData.city}
+              onChange={handleChange}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 transition-all outline-none text-sm disabled:opacity-50"
+              disabled={!formData.state}
+            >
+              <option value="">Select City</option>
+              {cityList.map((c) => (
+                <option key={c.id} value={c.name}>{c.name}</option>
               ))}
             </select>
           </div>
         </div>
-
-        <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-700 ml-1">
-            City <span className="text-red-500">*</span>
-          </label>
-          <select
-            name="city"
-            value={formData.city}
-            onChange={handleChange}
-            disabled={!formData.state || cityList.length === 0}
-            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
-          >
-            <option value="">
-              {formData.state && cityList.length === 0
-                ? "Loading cities..."
-                : "Select City"}
-            </option>
-            {cityList.map((c) => (
-              <option key={c.id} value={c.name}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-700 ml-1">
-            Address
-          </label>
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-slate-700 mb-1">Full Address</label>
           <textarea
             name="address"
+            rows={2}
             value={formData.address}
             onChange={handleChange}
-            rows={2}
-            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none resize-none placeholder:text-slate-400"
-            placeholder="Street address, building, apartment..."
+            placeholder="House, Street, Area..."
+            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-[10px] focus:outline-none focus:border-primary-500 transition-all resize-none shadow-sm text-sm"
           />
         </div>
       </div>
 
-      <FormSelect
-        label="Primary Institution"
-        name="institution"
-        value={formData.institution}
-        onChange={handleChange}
-        options={institutionOptions}
-        error={errors.institution}
-        required
-        placeholder={
-          loadingInstitutions
-            ? "Loading institutions..."
-            : "Select a primary institution"
-        }
-        disabled={loadingInstitutions}
-      />
-
-      {/* Multi-Institution Access */}
-      <div className="space-y-3">
-        <label className="block text-sm font-medium text-slate-700">
-          Additional Institution Access (Optional)
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 border border-slate-200 rounded-xl bg-slate-50">
-          {institutions
-            .filter((inst) => inst._id !== formData.institution)
-            .map((inst) => (
-              <label
-                key={inst._id}
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white transition-colors cursor-pointer group"
-              >
-                <input
-                  type="checkbox"
-                  checked={formData.institutionAccess.includes(inst._id)}
-                  onChange={() => handleInstitutionAccessToggle(inst._id)}
-                  className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                />
-                <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
-                  {inst.name}
-                </span>
-              </label>
-            ))}
-          {institutions.length === 0 && !loadingInstitutions && (
-            <p className="text-sm text-slate-400 col-span-2 text-center py-2">
-              No institutions available
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Signature Image Upload */}
-      <div className="space-y-3">
-        <label className="block text-sm font-medium text-slate-700">
-          Digital Signature
-        </label>
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
-            <label className="relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-primary-400 hover:bg-primary-50/30 transition-all group">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <Upload className="w-8 h-8 text-slate-400 group-hover:text-primary-500 mb-2 transition-colors" />
-                <p className="text-sm text-slate-500 group-hover:text-primary-600">
-                  <span className="font-semibold">
-                    Click to upload signature
-                  </span>
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  PNG, JPG or WebP (Max. 2MB)
-                </p>
-              </div>
-              <input
-                type="file"
-                className="hidden"
-                accept="image/*"
-                onChange={(e) => handleImageChange(e, "signatureImage")}
-              />
-            </label>
-          </div>
-          {signaturePreview && (
-            <div className="relative w-32 h-32 rounded-xl border border-slate-200 overflow-hidden bg-white flex items-center justify-center p-2">
-              <img
-                src={signaturePreview}
-                alt="Signature Preview"
-                className="max-w-full max-h-full object-contain"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData((prev) => ({ ...prev, signatureImage: "" }));
-                  setSignaturePreview(null);
-                }}
-                className="absolute top-1 right-1 p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Conditional Doctor Fields */}
-      {formData.role === "Doctor" && (
-        <div className="border-t border-slate-200 pt-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">
-            Doctor Information
-          </h3>
-
-          <FormInput
-            label="Registration Number"
-            name="registrationNumber"
-            value={formData.registrationNumber}
-            onChange={handleChange}
-            error={errors.registrationNumber}
-            required
-            placeholder="e.g., MD-2024-001"
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <FormInput
-              label="Specialization"
-              name="specialization"
-              value={formData.specialization}
-              onChange={handleChange}
-              error={errors.specialization}
-              required
-              placeholder="e.g., Cardiology"
-            />
-            <FormInput
-              label="Designation"
-              name="designation"
-              value={formData.designation}
-              onChange={handleChange}
-              error={errors.designation}
-              required
-              placeholder="e.g., Senior Consultant"
-            />
-          </div>
-        </div>
-      )}
-
-      <div className="flex gap-3 pt-4">
+      {/* Actions */}
+      <div className="flex gap-4 pt-6 border-t border-slate-100">
         <button
           type="button"
           onClick={onCancel}
-          disabled={isSubmitting}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+          className="flex-1 px-6 py-3 rounded-[15px] bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-all"
         >
           Cancel
         </button>
         <button
           type="submit"
-          disabled={isSubmitting || loadingInstitutions}
-          className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isSubmitting}
+          className="flex-[2] px-8 py-3 rounded-[15px] bg-primary-600 text-white font-bold hover:bg-primary-700 shadow-lg shadow-primary-200 flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
         >
-          {isSubmitting ? "Saving..." : user ? "Update User" : "Add User"}
+          {isSubmitting ? "Saving..." : user ? "Update User" : "Create User"}
         </button>
       </div>
     </form>

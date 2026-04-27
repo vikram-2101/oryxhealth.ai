@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Mail, Phone, Building, Users as UsersIcon, Edit, Trash2 } from 'lucide-react';
 import { institutionService, customerService } from '../services';
+import { useAuth } from '../context/AuthContext';
 import { SearchBar } from '../components/ui/SearchBar';
 import { Pagination } from '../components/ui/Pagination';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -21,7 +22,9 @@ export const InstitutionsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedInstitution, setSelectedInstitution] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
+   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin';
   const itemsPerPage = 8;
 
   useEffect(() => {
@@ -31,12 +34,19 @@ export const InstitutionsPage = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [institutionsRes, customersRes] = await Promise.all([
-        institutionService.getAll(),
-        customerService.getAll(),
-      ]);
+      const promises = [institutionService.getAll()];
+      
+      if (isSuperAdmin) {
+        promises.push(customerService.getAll());
+      }
+
+      const [institutionsRes, customersRes] = await Promise.all(promises);
+      
       setInstitutions(institutionsRes.data.institutions || institutionsRes.data);
-      setCustomers(customersRes.data.customers || customersRes.data);
+      
+      if (customersRes) {
+        setCustomers(customersRes.data.customers || customersRes.data);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -122,18 +132,20 @@ export const InstitutionsPage = () => {
             placeholder="Search institutions..."
           />
         </div>
-        <select
-          value={selectedCustomer}
-          onChange={(e) => setSelectedCustomer(e.target.value)}
-          className="px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          <option value="">All Customers</option>
-          {customers?.map((customer) => (
-            <option key={customer._id} value={customer._id}>
-              {customer.name}
-            </option>
-          ))}
-        </select>
+        {isSuperAdmin && (
+          <select
+            value={selectedCustomer}
+            onChange={(e) => setSelectedCustomer(e.target.value)}
+            className="px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">All Customers</option>
+            {customers?.map((customer) => (
+              <option key={customer._id} value={customer._id}>
+                {customer.name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {loading ? (

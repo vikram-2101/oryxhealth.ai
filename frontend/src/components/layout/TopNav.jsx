@@ -1,17 +1,28 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronRight, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useBreadcrumbs } from '../../context/BreadcrumbContext';
 
 export const TopNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
+  const { breadcrumbNames } = useBreadcrumbs();
 
   const getBreadcrumbs = () => {
     const paths = location.pathname.split('/').filter(Boolean);
-    if (paths.length === 0) return ['Dashboard'];
+    if (paths.length === 0) return [{ label: 'Dashboard', path: '/' }];
     
-    return paths.map((path) => path.charAt(0).toUpperCase() + path.slice(1));
+    let currentPath = '';
+    return paths.map((segment) => {
+      currentPath += `/${segment}`;
+      // Check if we have a mapped name for this segment (ID)
+      const label = breadcrumbNames[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+      return {
+        label,
+        path: currentPath
+      };
+    });
   };
 
   const breadcrumbs = getBreadcrumbs();
@@ -32,10 +43,11 @@ export const TopNav = () => {
                 className={
                   index === breadcrumbs.length - 1
                     ? 'font-semibold text-slate-900'
-                    : 'text-slate-500'
+                    : 'text-slate-500 hover:text-slate-700 cursor-pointer transition-colors'
                 }
+                onClick={() => index < breadcrumbs.length - 1 && navigate(crumb.path)}
               >
-                {crumb}
+                {crumb.label}
               </span>
             </div>
           ))}

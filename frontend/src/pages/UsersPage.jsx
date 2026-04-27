@@ -100,8 +100,9 @@ export const UsersPage = () => {
   };
 
   const filteredUsers = users.filter((user) => {
+    const fullName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim();
     const matchesSearch =
-      user.name.toLowerCase().includes(search.toLowerCase()) ||
+      fullName.toLowerCase().includes(search.toLowerCase()) ||
       user.email.toLowerCase().includes(search.toLowerCase());
     const matchesRole = !selectedRole || user.role === selectedRole;
     const matchesInstitution =
@@ -115,8 +116,11 @@ export const UsersPage = () => {
     currentPage * itemsPerPage
   );
 
-  const getInitials = (name) => {
-    return name
+  const getInitials = (user) => {
+    if (user.firstName && user.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    }
+    return (user.name || 'U')
       .split(' ')
       .map((n) => n[0])
       .join('')
@@ -221,7 +225,7 @@ export const UsersPage = () => {
                               {user.photo ? (
                                 <img src={user.photo} alt={user.name} className="w-full h-full object-cover" />
                               ) : (
-                                getInitials(user.name)
+                                getInitials(user)
                               )}
                             </div>
                             <div>
