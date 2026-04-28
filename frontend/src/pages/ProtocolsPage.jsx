@@ -1,10 +1,20 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Plus, ClipboardList, Edit, Trash2, ArrowLeft, 
-  FileText, Layout, Power, PowerOff, ChevronRight,
-  Search, MoreVertical, Settings
+import {
+  Plus,
+  ClipboardList,
+  Edit,
+  Trash2,
+  ArrowLeft,
+  FileText,
+  Layout,
+  Power,
+  PowerOff,
+  ChevronRight,
+  Search,
+  MoreVertical,
+  Settings,
 } from "lucide-react";
 import { protocolService, categoryService } from "../services";
 import { SearchBar } from "../components/ui/SearchBar";
@@ -18,8 +28,9 @@ import { useBreadcrumbs } from "../context/BreadcrumbContext";
 export const ProtocolsPage = () => {
   const { categoryId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { setBreadcrumbName } = useBreadcrumbs();
-  
+
   const [protocols, setProtocols] = useState([]);
   const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +42,14 @@ export const ProtocolsPage = () => {
 
   useEffect(() => {
     fetchData();
+
+    // Check for "add" query param to open form automatically
+    const params = new URLSearchParams(location.search);
+    if (params.get("add") === "true") {
+      handleAdd();
+      // Clean up URL to prevent re-opening on refresh
+      navigate(location.pathname, { replace: true });
+    }
   }, [categoryId]);
 
   const fetchData = async () => {
@@ -42,7 +61,7 @@ export const ProtocolsPage = () => {
       ]);
       setProtocols(protocolsRes.data || []);
       setCategory(categoryRes.data);
-      
+
       if (categoryRes.data?.name) {
         setBreadcrumbName(categoryId, categoryRes.data.name);
       }
@@ -90,7 +109,9 @@ export const ProtocolsPage = () => {
 
   const handleToggleStatus = async (protocol) => {
     try {
-      await protocolService.update(protocol._id, { isActive: !protocol.isActive });
+      await protocolService.update(protocol._id, {
+        isActive: !protocol.isActive,
+      });
       fetchData();
       setStatusToggleConfirm(null);
     } catch (error) {
@@ -116,19 +137,16 @@ export const ProtocolsPage = () => {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-slate-900">
-                {category?.name || "Loading..."}
+                {category?.name || "Loading..."} Protocols
               </h1>
-              <span className="px-2.5 py-1 bg-primary-50 text-primary-700 text-[10px] font-bold rounded-lg uppercase tracking-wider border border-primary-100">
+              {/* <span className="px-2.5 py-1 bg-primary-50 text-primary-700 text-[10px] font-bold rounded-lg uppercase tracking-wider border border-primary-100">
                 Protocols
-              </span>
+              </span> */}
             </div>
-            <p className="text-slate-500 text-sm mt-0.5">
-              Manage clinical screening and consultation workflows
-            </p>
           </div>
         </div>
-        
-        <button 
+
+        <button
           onClick={handleAdd}
           className="btn-primary flex items-center gap-2 px-6 shadow-primary-200/50"
         >
@@ -150,8 +168,12 @@ export const ProtocolsPage = () => {
           />
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-slate-100/50 rounded-xl border border-slate-200/50">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total:</span>
-          <span className="text-sm font-bold text-slate-900">{filteredProtocols.length}</span>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Total:
+          </span>
+          <span className="text-sm font-bold text-slate-900">
+            {filteredProtocols.length}
+          </span>
         </div>
       </div>
 
@@ -160,7 +182,9 @@ export const ProtocolsPage = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <LoadingSpinner />
-            <p className="text-slate-400 text-sm font-medium animate-pulse">Fetching protocols...</p>
+            <p className="text-slate-400 text-sm font-medium animate-pulse">
+              Fetching protocols...
+            </p>
           </div>
         ) : filteredProtocols.length === 0 ? (
           <div className="py-20">
@@ -175,18 +199,30 @@ export const ProtocolsPage = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Protocol Name</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Event Category</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Sex</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Age Group</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                    Protocol Name
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                    Event Category
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                    Sex
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                    Age Group
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filteredProtocols.map((protocol) => (
-                  <tr 
-                    key={protocol._id} 
+                  <tr
+                    key={protocol._id}
                     className="hover:bg-slate-50/30 transition-colors group"
                   >
                     <td className="px-6 py-4">
@@ -199,7 +235,8 @@ export const ProtocolsPage = () => {
                             {protocol.name}
                           </div>
                           <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            ID: {protocol._id.slice(-8).toUpperCase()} • V{protocol.version || 1}
+                            ID: {protocol._id.slice(-8).toUpperCase()} • V
+                            {protocol.version || 1}
                           </div>
                         </div>
                       </div>
@@ -208,62 +245,87 @@ export const ProtocolsPage = () => {
                       {category?.name || "—"}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
-                        protocol.sex === 'Male' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                        protocol.sex === 'Female' ? 'bg-pink-50 text-pink-600 border border-pink-100' :
-                        protocol.sex === 'Other' ? 'bg-purple-50 text-purple-600 border border-purple-100' :
-                        protocol.sex === 'Any' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                        'bg-slate-50 text-slate-600 border border-slate-100'
-                      }`}>
+                      <span
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                          protocol.sex === "Male"
+                            ? "bg-blue-50 text-blue-600 border border-blue-100"
+                            : protocol.sex === "Female"
+                              ? "bg-pink-50 text-pink-600 border border-pink-100"
+                              : protocol.sex === "Other"
+                                ? "bg-purple-50 text-purple-600 border border-purple-100"
+                                : protocol.sex === "Any"
+                                  ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                  : "bg-slate-50 text-slate-600 border border-slate-100"
+                        }`}
+                      >
                         {protocol.sex || "Any"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm font-bold text-slate-700">
-                         {protocol.minAge || 0}-{protocol.maxAge || 100} <span className="text-[10px] text-slate-400 font-normal uppercase ml-0.5">Years</span>
+                        {protocol.minAge || 0}-{protocol.maxAge || 100}{" "}
+                        <span className="text-[10px] text-slate-400 font-normal uppercase ml-0.5">
+                          Years
+                        </span>
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${protocol.isActive ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-slate-300"}`} />
-                        <span className={`text-xs font-bold ${protocol.isActive ? "text-emerald-700" : "text-slate-500"}`}>
+                        <div
+                          className={`w-2 h-2 rounded-full ${protocol.isActive ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-slate-300"}`}
+                        />
+                        <span
+                          className={`text-xs font-bold ${protocol.isActive ? "text-emerald-700" : "text-slate-500"}`}
+                        >
                           {protocol.isActive ? "Active" : "Inactive"}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
+                        <button
                           onClick={() => handleEdit(protocol)}
                           className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all border border-transparent hover:border-blue-100"
                           title="Edit Basic Details"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={() => navigate(`/categories/${categoryId}/protocols/${protocol._id}/schema`)}
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/categories/${categoryId}/protocols/${protocol._id}/schema`,
+                            )
+                          }
                           className="p-2 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-all border border-transparent hover:border-primary-100"
                           title="View Schema"
                         >
                           <Layout className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={() => navigate(`/categories/${categoryId}/protocols/${protocol._id}/report-template`)}
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/categories/${categoryId}/protocols/${protocol._id}/report-template`,
+                            )
+                          }
                           className="p-2 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all border border-transparent hover:border-indigo-100"
                           title="View Report Template"
                         >
                           <FileText className="w-4 h-4" />
                         </button>
-                        <button 
+                        <button
                           onClick={() => setStatusToggleConfirm(protocol)}
                           className={`p-2 rounded-lg transition-all border border-transparent ${
-                            protocol.isActive 
-                              ? "text-slate-400 hover:text-amber-600 hover:bg-amber-50 hover:border-amber-100" 
+                            protocol.isActive
+                              ? "text-slate-400 hover:text-amber-600 hover:bg-amber-50 hover:border-amber-100"
                               : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-100"
                           }`}
                           title={protocol.isActive ? "Deactivate" : "Activate"}
                         >
-                          {protocol.isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                          {protocol.isActive ? (
+                            <PowerOff className="w-4 h-4" />
+                          ) : (
+                            <Power className="w-4 h-4" />
+                          )}
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(protocol)}
@@ -311,7 +373,11 @@ export const ProtocolsPage = () => {
         isOpen={!!statusToggleConfirm}
         onClose={() => setStatusToggleConfirm(null)}
         onConfirm={() => handleToggleStatus(statusToggleConfirm)}
-        title={statusToggleConfirm?.isActive ? "Deactivate Protocol" : "Activate Protocol"}
+        title={
+          statusToggleConfirm?.isActive
+            ? "Deactivate Protocol"
+            : "Activate Protocol"
+        }
         message={`Are you sure you want to ${statusToggleConfirm?.isActive ? "deactivate" : "activate"} "${statusToggleConfirm?.name}"?`}
       />
     </div>

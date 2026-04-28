@@ -6,17 +6,19 @@ import {
   Building,
   Users,
   Layers,
-  TrendingUp,
-  TrendingDown,
   Activity,
   Search,
   Filter,
   Plus,
   MoreHorizontal,
+  HeartPulse,
+  ClipboardList,
 } from "lucide-react";
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -52,7 +54,7 @@ const PIE_COLORS = [
 ];
 
 export const DashboardPage = () => {
-   const navigate = useNavigate();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "super_admin";
   const [stats, setStats] = useState(null);
@@ -70,10 +72,17 @@ export const DashboardPage = () => {
         statsService.getDashboardStats(),
         userService.getAll(),
       ]);
-      setStats(statsRes.data);
 
-      // Get the 5 most recent users
-      const allUsers = usersRes.data.users || usersRes.data;
+      // Extract stats - the service returns response.data, which is { success, data }
+      const statsData = statsRes?.data || statsRes;
+      if (statsData && typeof statsData === "object") {
+        setStats(statsData);
+      }
+
+      // Extract users - the service returns response.data, which is { success, data, users }
+      // The users might be in .data or .users field
+      const rawUsers = usersRes?.data || usersRes?.users || usersRes;
+      const allUsers = Array.isArray(rawUsers) ? rawUsers : [];
       setRecentUsers(allUsers.slice(0, 5));
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
@@ -92,11 +101,31 @@ export const DashboardPage = () => {
 
   const kpiCards = [
     {
+      id: "patients",
+      label: "Total Patients",
+      value: stats?.totalPatients || 0,
+      icon: HeartPulse,
+      gradient: "from-blue-500/10 to-blue-500/5",
+      iconBg: "bg-blue-500/10",
+      iconColor: "text-blue-600",
+      path: "#",
+      show: true,
+    },
+    {
+      id: "events",
+      label: "Total Events",
+      value: stats?.totalEvents || 0,
+      icon: ClipboardList,
+      gradient: "from-rose-500/10 to-rose-500/5",
+      iconBg: "bg-rose-500/10",
+      iconColor: "text-rose-600",
+      path: "#",
+      show: true,
+    },
+    {
       id: "customers",
       label: "Total Customers",
       value: stats?.totalCustomers || 0,
-      change: +12.5,
-      sub: "vs last month",
       icon: Building2,
       gradient: "from-primary/10 to-primary/5",
       iconBg: "bg-primary/10",
@@ -108,8 +137,6 @@ export const DashboardPage = () => {
       id: "institutions",
       label: "Total Institutions",
       value: stats?.totalInstitutions || 0,
-      change: +8.2,
-      sub: "vs last month",
       icon: Building,
       gradient: "from-emerald-500/10 to-emerald-500/5",
       iconBg: "bg-emerald-500/10",
@@ -121,8 +148,6 @@ export const DashboardPage = () => {
       id: "users",
       label: "Total Users",
       value: stats?.totalUsers || 0,
-      change: -2.4,
-      sub: "vs last month",
       icon: Users,
       gradient: "from-violet-500/10 to-violet-500/5",
       iconBg: "bg-violet-500/10",
@@ -134,8 +159,6 @@ export const DashboardPage = () => {
       id: "panels",
       label: "Total Panels",
       value: stats?.totalPanels || 0,
-      change: +5.0,
-      sub: "vs last month",
       icon: Layers,
       gradient: "from-amber-500/10 to-amber-500/5",
       iconBg: "bg-amber-500/10",
@@ -143,21 +166,7 @@ export const DashboardPage = () => {
       path: "/panels",
       show: true,
     },
-  ].filter(card => card.show);
-
-  const growthData = [
-    { month: "Jul", users: 14, institutions: 5 },
-    { month: "Aug", users: 18, institutions: 6 },
-    { month: "Sep", users: 22, institutions: 7 },
-    { month: "Oct", users: 28, institutions: 8 },
-    { month: "Nov", users: 34, institutions: 9 },
-    { month: "Dec", users: 31, institutions: 10 },
-    {
-      month: "Jan",
-      users: stats?.totalUsers || 38,
-      institutions: stats?.totalInstitutions || 12,
-    },
-  ];
+  ].filter((card) => card.show);
 
   const roleDistribution = [
     { name: "Doctors", value: stats?.usersByRole?.Doctor || 0 },
@@ -188,10 +197,10 @@ export const DashboardPage = () => {
       <motion.div variants={item} className="flex items-end justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-            Dashboard
+            {stats?.accountName || "Dashboard"}
           </h1>
           <p className="text-slate-600 mt-1">
-            Digital Health System administration overview
+            Welcome to your dashboard overview.
           </p>
         </div>
       </motion.div>
@@ -199,63 +208,42 @@ export const DashboardPage = () => {
       {/* KPI Cards */}
       <motion.div
         variants={item}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4"
       >
-        {kpiCards.map((s) => {
-          const isPositive = s.change >= 0;
-          return (
-            <motion.div
-              key={s.label}
-              whileHover={{
-                y: -5,
-                boxShadow: "0 12px 40px -12px rgba(0,0,0,0.15)",
-                borderColor: "rgb(var(--primary-200))",
-              }}
-              transition={{ duration: 0.25 }}
-              onClick={() => navigate(s.path)}
-              className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 cursor-pointer group/card"
-            >
-              <div
-                className={`absolute inset-0 bg-gradient-to-br ${s.gradient} pointer-events-none`}
-              />
+        {kpiCards.map((s) => (
+          <motion.div
+            key={s.label}
+            whileHover={{
+              y: -5,
+              boxShadow: "0 12px 40px -12px rgba(0,0,0,0.15)",
+              borderColor: "rgb(var(--primary-200))",
+            }}
+            transition={{ duration: 0.25 }}
+            onClick={() => navigate(s.path)}
+            className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 cursor-pointer group/card"
+          >
+            <div
+              className={`absolute inset-0 bg-gradient-to-br ${s.gradient} pointer-events-none`}
+            />
 
-              <div className="relative flex items-start justify-between">
-                <div className="space-y-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-600">
-                    {s.label}
-                  </p>
-                  <p className="text-3xl font-extrabold text-slate-900 leading-none">
-                    {s.value}
-                  </p>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                        isPositive
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {isPositive ? (
-                        <TrendingUp className="w-3 h-3" />
-                      ) : (
-                        <TrendingDown className="w-3 h-3" />
-                      )}
-                      {isPositive ? "+" : ""}
-                      {s.change}%
-                    </span>
-                    <span className="text-[11px] text-slate-500">{s.sub}</span>
-                  </div>
-                </div>
-
-                <div
-                  className={`w-11 h-11 rounded-xl ${s.iconBg} flex items-center justify-center`}
-                >
-                  <s.icon className={`w-5 h-5 ${s.iconColor}`} />
-                </div>
+            <div className="relative flex items-start justify-between">
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-600">
+                  {s.label}
+                </p>
+                <p className="text-3xl font-extrabold text-slate-900 leading-none">
+                  {s.value}
+                </p>
               </div>
-            </motion.div>
-          );
-        })}
+
+              <div
+                className={`w-11 h-11 rounded-xl ${s.iconBg} flex items-center justify-center`}
+              >
+                <s.icon className={`w-5 h-5 ${s.iconColor}`} />
+              </div>
+            </div>
+          </motion.div>
+        ))}
       </motion.div>
 
       {/* Analytics Section */}
@@ -263,41 +251,52 @@ export const DashboardPage = () => {
         {/* Line Chart */}
         <motion.div
           variants={item}
-          className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6"
+          className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 max-w-[850px]"
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="mb-6">
             <div>
               <h2 className="text-sm font-semibold text-slate-900">
-                System Growth
+                Patient Distribution
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Users & institutions over time
+                Total patients per institution
               </p>
             </div>
-            <select className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20">
-              <option>Last 7 months</option>
-              <option>Last 12 months</option>
-            </select>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={growthData}>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={stats?.patientsByInstitution || []}
+              layout="vertical"
+              margin={{ left: 0, right: 30 }}
+            >
+              <defs>
+                <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#9165bd" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#9165bd" stopOpacity={1} />
+                </linearGradient>
+              </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="#e2e8f0"
+                horizontal={true}
                 vertical={false}
               />
               <XAxis
-                dataKey="month"
+                type="number"
                 tick={{ fontSize: 11, fill: "#64748b" }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
+                dataKey="name"
+                type="category"
                 tick={{ fontSize: 11, fill: "#64748b" }}
                 axisLine={false}
                 tickLine={false}
+                width={130}
               />
               <Tooltip
+                cursor={{ fill: "#f8fafc" }}
                 contentStyle={{
                   background: "#ffffff",
                   border: "1px solid #e2e8f0",
@@ -306,21 +305,13 @@ export const DashboardPage = () => {
                   boxShadow: "0 4px 20px -4px rgba(0,0,0,0.1)",
                 }}
               />
-              <Line
-                type="monotone"
-                dataKey="users"
-                stroke="#9165bd"
-                strokeWidth={2.5}
-                dot={false}
+              <Bar
+                dataKey="count"
+                fill="url(#barGradient)"
+                radius={[0, 4, 4, 0]}
+                barSize={20}
               />
-              <Line
-                type="monotone"
-                dataKey="institutions"
-                stroke="hsl(160, 84%, 39%)"
-                strokeWidth={2.5}
-                dot={false}
-              />
-            </LineChart>
+            </BarChart>
           </ResponsiveContainer>
         </motion.div>
 
@@ -359,7 +350,9 @@ export const DashboardPage = () => {
                   iconType="circle"
                   iconSize={8}
                   formatter={(value) => (
-                    <span className="text-xs text-slate-500 ml-1">{value}</span>
+                    <span className="text-sm font-bold text-slate-500 ml-1">
+                      {value}
+                    </span>
                   )}
                 />
                 <Tooltip
@@ -384,7 +377,7 @@ export const DashboardPage = () => {
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-b border-slate-200">
           <h2 className="text-sm font-semibold text-slate-900">Recent Users</h2>
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <input
@@ -398,7 +391,7 @@ export const DashboardPage = () => {
             <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 transition-colors">
               <Plus className="w-3.5 h-3.5" /> Add User
             </button>
-          </div>
+          </div> */}
         </div>
 
         <div className="overflow-x-auto">

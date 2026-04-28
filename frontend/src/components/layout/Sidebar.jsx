@@ -34,8 +34,8 @@ export const Sidebar = () => {
         { icon: Building, label: "Institutions", path: "/institutions" },
         { icon: Users, label: "Users", path: "/users" },
         { icon: Layers, label: "Panels", path: "/panels" },
-        { icon: Briefcase, label: "Programs", path: "/programs" },
-        { icon: CalendarDays, label: "Appointments", path: "/appointment-types" },
+        // { icon: Briefcase, label: "Programs", path: "/programs" },
+        // { icon: CalendarDays, label: "Appointments", path: "/appointment-types" },
       ];
     }
 
@@ -45,9 +45,13 @@ export const Sidebar = () => {
         { icon: Building, label: "Institutions", path: "/institutions" },
         { icon: Users, label: "Users", path: "/users" },
         { icon: Layers, label: "Panels", path: "/panels" },
-        { icon: FolderTree, label: "Category", path: "/categories" },
-        { icon: Briefcase, label: "Programs", path: "/programs" },
-        { icon: CalendarDays, label: "Appointments", path: "/appointment-types" },
+        { icon: FolderTree, label: "Event Category", path: "/categories" },
+        { icon: Briefcase, label: "Program Types", path: "/programs" },
+        {
+          icon: CalendarDays,
+          label: "Appointments",
+          path: "/appointment-types",
+        },
       ];
     }
 
@@ -149,7 +153,7 @@ export const Sidebar = () => {
             </div>
           )}
         </div>
-        
+
         <button
           onClick={logout}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 transition-all"

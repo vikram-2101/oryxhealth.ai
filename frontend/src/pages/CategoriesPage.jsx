@@ -127,6 +127,18 @@ export const CategoriesPage = () => {
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(
+                        `/categories/${category._id}/protocols?add=true`,
+                      );
+                    }}
+                    className="p-2 rounded-lg bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    title="Quick Add Protocol"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={(e) => handleEdit(e, category)}
                     className="p-2 rounded-lg bg-slate-50 text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-colors"
                   >
@@ -151,22 +163,29 @@ export const CategoriesPage = () => {
                 <p className="text-sm text-slate-500 line-clamp-2">
                   {category.description || "No description provided"}
                 </p>
-                  <div className="flex gap-2 text-[10px] font-bold uppercase tracking-wider mt-2">
-                    <span className={`px-1.5 py-0.5 rounded border ${
-                      category.sex === 'Male' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                      category.sex === 'Female' ? 'bg-pink-50 text-pink-600 border-pink-100' :
-                      category.sex === 'Other' ? 'bg-purple-50 text-purple-600 border-purple-100' :
-                      category.sex === 'Any' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                      'bg-slate-50 text-slate-600 border-slate-100'
-                    }`}>
-                      {category.sex || "Any"}
+                <div className="flex gap-2 text-[10px] font-bold uppercase tracking-wider mt-2">
+                  <span
+                    className={`px-1.5 py-0.5 rounded border ${
+                      category.sex === "Male"
+                        ? "bg-blue-50 text-blue-600 border-blue-100"
+                        : category.sex === "Female"
+                          ? "bg-pink-50 text-pink-600 border-pink-100"
+                          : category.sex === "Other"
+                            ? "bg-purple-50 text-purple-600 border-purple-100"
+                            : category.sex === "Any"
+                              ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                              : "bg-slate-50 text-slate-600 border-slate-100"
+                    }`}
+                  >
+                    {category.sex || "Any"}
+                  </span>
+                  {(category.minAge !== undefined ||
+                    category.maxAge !== undefined) && (
+                    <span className="px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 border border-orange-100">
+                      Age: {category.minAge || 0}-{category.maxAge || 100} Yrs
                     </span>
-                    {(category.minAge !== undefined || category.maxAge !== undefined) && (
-                      <span className="px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 border border-orange-100">
-                        Age: {category.minAge || 0}-{category.maxAge || 100} Yrs
-                      </span>
-                    )}
-                  </div>
+                  )}
+                </div>
               </div>
 
               <div className="pt-4 border-t border-slate-200 flex items-center justify-between text-sm">
@@ -189,7 +208,7 @@ export const CategoriesPage = () => {
       <FormModal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
-        title={selectedCategory ? "Edit Category" : "Add New Category"}
+        title={selectedCategory ? "Edit Category" : "Add Category"}
       >
         <CategoryForm
           category={selectedCategory}

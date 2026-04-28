@@ -14,6 +14,7 @@ import {
   ClipboardList,
   CheckCircle2,
   AlertCircle,
+  X,
 } from "lucide-react";
 import { protocolService } from "../services";
 import { useToast } from "../context/ToastContext";
@@ -30,6 +31,7 @@ export const ProtocolSchemaPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+  const [showOptionsModal, setShowOptionsModal] = useState(null); // { stepIndex, fieldIndex }
 
   useEffect(() => {
     fetchData();
@@ -150,7 +152,7 @@ export const ProtocolSchemaPage = () => {
               {protocol.name}
             </h1>
             <p className="text-xs text-slate-500 font-medium">
-              Schema Configuration • V{protocol.version || 1}
+              Schema Configuration
             </p>
           </div>
         </div>
@@ -234,9 +236,9 @@ export const ProtocolSchemaPage = () => {
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="text-xs text-amber-700 leading-relaxed">
-              <p className="font-bold mb-1">Architecture Note</p>
+              <p className="font-bold mb-1">Note</p>
               Avoid changing field keys if data has already been recorded for
-              this protocol version.
+              this protocol.
             </div>
           </div>
         </div>
@@ -397,9 +399,92 @@ export const ProtocolSchemaPage = () => {
 
                         {field.type === "radio" && (
                           <div className="col-span-12 flex justify-start mt-1">
-                            <button className="text-[10px] font-bold text-primary-600 uppercase hover:underline">
-                              Manage Options
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setShowOptionsModal({
+                                  stepIndex: activeStep,
+                                  fieldIndex: fIdx,
+                                });
+                              }}
+                              className="text-[10px] font-bold text-primary-600 uppercase hover:underline"
+                            >
+                              Manage Options{" "}
+                              {field.options?.length > 0
+                                ? `(${field.options.length})`
+                                : ""}
                             </button>
+                          </div>
+                        )}
+
+                        {field.type === "hearing_test_table" && (
+                          <div className="col-span-12 mt-2 border-t border-slate-50 pt-3">
+                            <div className="flex items-center justify-between mb-4">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setShowOptionsModal({
+                                    stepIndex: activeStep,
+                                    fieldIndex: fIdx,
+                                  });
+                                }}
+                                className="text-[10px] font-bold text-primary-600 uppercase hover:underline"
+                              >
+                                Manage Table Rows{" "}
+                                {field.options?.length > 0
+                                  ? `(${field.options.length})`
+                                  : ""}
+                              </button>
+                            </div>
+
+                            <div className="bg-slate-50/50 rounded-xl border border-slate-100 overflow-hidden">
+                              <table className="w-full text-left border-collapse">
+                                <thead className="bg-white border-b border-slate-100">
+                                  <tr>
+                                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                      Test Name
+                                    </th>
+                                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                                      Left Ear
+                                    </th>
+                                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                                      Right Ear
+                                    </th>
+                                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                      Remarks
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(field.options || []).map((row, rIdx) => (
+                                    <tr key={rIdx} className="border-b border-slate-50/50">
+                                      <td className="px-4 py-2 text-xs font-bold text-slate-600 italic">
+                                        {row}
+                                      </td>
+                                      <td className="px-4 py-2 text-center opacity-20">
+                                        <div className="w-8 h-4 bg-slate-200 rounded-full mx-auto" />
+                                      </td>
+                                      <td className="px-4 py-2 text-center opacity-20">
+                                        <div className="w-8 h-4 bg-slate-200 rounded-full mx-auto" />
+                                      </td>
+                                      <td className="px-4 py-2 opacity-20">
+                                        <div className="w-full h-4 bg-slate-100 rounded" />
+                                      </td>
+                                    </tr>
+                                  ))}
+                                  {(field.options || []).length === 0 && (
+                                    <tr>
+                                      <td
+                                        colSpan={4}
+                                        className="px-4 py-8 text-center text-[10px] font-bold text-slate-400 uppercase italic"
+                                      >
+                                        No rows defined. Click "Manage Table Rows" to add tests.
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -425,6 +510,160 @@ export const ProtocolSchemaPage = () => {
           )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {showOptionsModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowOptionsModal(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    {protocol.formStructure[showOptionsModal.stepIndex].fields[showOptionsModal.fieldIndex].type === 'radio' ? 'Manage Options' : 'Manage Table Rows'}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    {protocol.formStructure[showOptionsModal.stepIndex].fields[showOptionsModal.fieldIndex].type === 'radio' ? 'Configure radio button choices' : 'Define test names for this table'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowOptionsModal(null)}
+                  className="p-2 rounded-xl hover:bg-white hover:shadow-sm text-slate-400 hover:text-slate-600 transition-all border border-transparent hover:border-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
+                    {protocol.formStructure[showOptionsModal.stepIndex].fields[showOptionsModal.fieldIndex].type === 'radio' ? 'Add New Option' : 'Add New Test Row'}
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder={protocol.formStructure[showOptionsModal.stepIndex].fields[showOptionsModal.fieldIndex].type === 'radio' ? "Enter option label..." : "e.g. OAE Test, ABR Test..."}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && e.target.value.trim()) {
+                          const currentOptions =
+                            protocol.formStructure[showOptionsModal.stepIndex]
+                              .fields[showOptionsModal.fieldIndex].options ||
+                            [];
+                          handleFieldChange(
+                            showOptionsModal.stepIndex,
+                            showOptionsModal.fieldIndex,
+                            "options",
+                            [...currentOptions, e.target.value.trim()],
+                          );
+                          e.target.value = "";
+                        }
+                      }}
+                      className="flex-1 px-4 py-2 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50/30 text-sm font-medium"
+                    />
+                    <button
+                      onClick={(e) => {
+                        const input = e.currentTarget.previousSibling;
+                        if (input.value.trim()) {
+                          const currentOptions =
+                            protocol.formStructure[showOptionsModal.stepIndex]
+                              .fields[showOptionsModal.fieldIndex].options ||
+                            [];
+                          handleFieldChange(
+                            showOptionsModal.stepIndex,
+                            showOptionsModal.fieldIndex,
+                            "options",
+                            [...currentOptions, input.value.trim()],
+                          );
+                          input.value = "";
+                        }
+                      }}
+                      className="p-2 rounded-xl bg-primary-600 text-white hover:bg-primary-700 shadow-md shadow-primary-100 transition-all"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
+                    {protocol.formStructure[showOptionsModal.stepIndex].fields[showOptionsModal.fieldIndex].type === 'radio' ? 'Current Options' : 'Defined Test Rows'} (
+                    {
+                      (
+                        protocol.formStructure[showOptionsModal.stepIndex]
+                          .fields[showOptionsModal.fieldIndex].options || []
+                      ).length
+                    }
+                    )
+                  </label>
+                  <div className="space-y-2">
+                    {(
+                      protocol.formStructure[showOptionsModal.stepIndex].fields[
+                        showOptionsModal.fieldIndex
+                      ].options || []
+                    ).map((opt, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 group"
+                      >
+                        <span className="flex-1 text-sm font-semibold text-slate-700">
+                          {opt}
+                        </span>
+                        <button
+                          onClick={() => {
+                            const currentOptions = [
+                              ...protocol.formStructure[
+                                showOptionsModal.stepIndex
+                              ].fields[showOptionsModal.fieldIndex].options,
+                            ];
+                            currentOptions.splice(i, 1);
+                            handleFieldChange(
+                              showOptionsModal.stepIndex,
+                              showOptionsModal.fieldIndex,
+                              "options",
+                              currentOptions,
+                            );
+                          }}
+                          className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    {(
+                      protocol.formStructure[showOptionsModal.stepIndex].fields[
+                        showOptionsModal.fieldIndex
+                      ].options || []
+                    ).length === 0 && (
+                      <div className="py-8 text-center text-slate-400 text-xs italic bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                        No options added yet
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button
+                  onClick={() => setShowOptionsModal(null)}
+                  className="px-6 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 transition-all shadow-sm"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

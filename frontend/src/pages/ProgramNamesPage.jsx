@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, Briefcase, Edit, Trash2, ArrowLeft } from "lucide-react";
 import { programService, programTypeService } from "../services";
@@ -9,10 +9,13 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { FormModal } from "../components/ui/FormModal";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { ProgramForm } from "../components/forms/ProgramForm";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
 
 export const ProgramNamesPage = () => {
   const { typeId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { setBreadcrumbName } = useBreadcrumbs();
   const [programs, setPrograms] = useState([]);
   const [programType, setProgramType] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +26,14 @@ export const ProgramNamesPage = () => {
 
   useEffect(() => {
     fetchData();
+
+    // Check for "add" query param to open form automatically
+    const params = new URLSearchParams(location.search);
+    if (params.get("add") === "true") {
+      handleAdd();
+      // Clean up URL to prevent re-opening on refresh
+      navigate(location.pathname, { replace: true });
+    }
   }, [typeId]);
 
   const fetchData = async () => {
@@ -34,6 +45,10 @@ export const ProgramNamesPage = () => {
       ]);
       setPrograms(programsRes.data || []);
       setProgramType(typeRes.data);
+
+      if (typeRes.data?.name) {
+        setBreadcrumbName(typeId, typeRes.data.name);
+      }
     } catch (error) {
       console.error("Error fetching programs:", error);
     } finally {
@@ -91,17 +106,17 @@ export const ProgramNamesPage = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-bold text-slate-900">
-              {programType?.name || "Loading..."}
+              {programType?.name || "Loading..."} Programs
             </h1>
-            <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-semibold rounded-full uppercase tracking-wider">
+            {/* <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-semibold rounded-full uppercase tracking-wider">
               Programs
-            </span>
+            </span> */}
           </div>
           <p className="text-slate-600 mt-1">
             {programs.length} programs available in this type
           </p>
         </div>
-        <button 
+        <button
           onClick={handleAdd}
           className="ml-auto btn-primary flex items-center gap-2"
         >
@@ -127,58 +142,84 @@ export const ProgramNamesPage = () => {
           description="Create your first program for this type"
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredPrograms.map((program, index) => (
-            <motion.div
-              key={program._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="card-premium p-5 space-y-4 group"
-            >
-              <div className="flex items-start justify-between">
-                <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600">
-                  <Briefcase className="w-6 h-6" />
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button 
-                    onClick={() => handleEdit(program)}
-                    className="p-2 rounded-lg bg-slate-50 text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-colors"
-                    title="Edit Program"
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-premium overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50 border-b border-slate-100">
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                    Program Name
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                    Description
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filteredPrograms.map((program) => (
+                  <tr
+                    key={program._id}
+                    className="hover:bg-slate-50/30 transition-colors group"
                   >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(program)}
-                    className="p-2 rounded-lg bg-slate-50 text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
-                    title="Delete Program"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-slate-900 text-lg mb-1">
-                  {program.name}
-                </h3>
-                <p className="text-sm text-slate-500 line-clamp-2">
-                  {program.description || "No description provided"}
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
-                <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${program.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}`}
-                >
-                  {program.isActive ? "Active" : "Inactive"}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-                  ID: {program._id.slice(-6)}
-                </span>
-              </div>
-            </motion.div>
-          ))}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100 shadow-sm">
+                          <Briefcase className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors">
+                            {program.name}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                            ID: {program._id.slice(-8).toUpperCase()}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600 font-medium max-w-xs truncate">
+                      {program.description || "No description provided"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-2 h-2 rounded-full ${program.isActive ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-slate-300"}`}
+                        />
+                        <span
+                          className={`text-xs font-bold ${program.isActive ? "text-emerald-700" : "text-slate-500"}`}
+                        >
+                          {program.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEdit(program)}
+                          className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all border border-transparent hover:border-blue-100"
+                          title="Edit Program"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(program)}
+                          className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
+                          title="Delete Program"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -186,7 +227,7 @@ export const ProgramNamesPage = () => {
       <FormModal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
-        title={selectedProgram ? "Edit Program" : "Add New Program"}
+        title={selectedProgram ? "Edit Program" : "Add Program"}
       >
         <ProgramForm
           program={selectedProgram}

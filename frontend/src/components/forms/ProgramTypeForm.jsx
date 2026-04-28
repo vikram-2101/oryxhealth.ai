@@ -34,8 +34,11 @@ export const ProgramTypeForm = ({ programType, onSubmit, onCancel }) => {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Program Type Name *
+          <label className="flex items-center justify-between text-sm font-medium text-slate-700 mb-1">
+            <span>Program Type Name *</span>
+            <span className={`text-[10px] font-bold ${formData.name.length >= 20 ? 'text-amber-600' : 'text-slate-400'}`}>
+              {formData.name.length}/20
+            </span>
           </label>
           <input
             type="text"
@@ -44,7 +47,8 @@ export const ProgramTypeForm = ({ programType, onSubmit, onCancel }) => {
             value={formData.name}
             onChange={handleChange}
             placeholder="Enter program type name"
-            className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+            maxLength={20}
+            className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all focus:border-primary-500"
           />
         </div>
 

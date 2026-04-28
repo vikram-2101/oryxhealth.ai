@@ -127,6 +127,16 @@ export const ProgramsPage = () => {
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/programs/${type._id}/names?add=true`);
+                    }}
+                    className="p-2 rounded-lg bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    title="Quick Add Program"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={(e) => handleEdit(e, type)}
                     className="p-2 rounded-lg bg-slate-50 text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-colors"
                   >
@@ -173,7 +183,7 @@ export const ProgramsPage = () => {
       <FormModal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
-        title={selectedType ? "Edit Program Type" : "Add New Program Type"}
+        title={selectedType ? "Edit Program Type" : "Add Program Type"}
       >
         <ProgramTypeForm
           programType={selectedType}
