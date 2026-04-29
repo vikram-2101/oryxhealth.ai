@@ -3,8 +3,9 @@ import mongoose from 'mongoose';
 const protocolFieldSchema = new mongoose.Schema({
     fieldKey: { type: String, required: true },
     label: { type: String, required: true },
-    type: { type: String, enum: ["text", "textarea", "radio", "datetime-local", "date", "time", "hearing_test_table"], required: true },
+    type: { type: String, enum: ["text", "textarea", "radio", "datetime-local", "date", "time", "hearing_test_table", "heading"], required: true },
     required: { type: Boolean, default: false },
+    includeInReport: { type: Boolean, default: true },
     options: [String],
     tests: [{
         key: { type: String },

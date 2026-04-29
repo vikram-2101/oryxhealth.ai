@@ -103,6 +103,7 @@ export const ProtocolSchemaPage = () => {
       label: `Field ${nextFieldNum}`,
       type: "text",
       required: false,
+      includeInReport: true,
       options: [],
     });
     setProtocol({ ...protocol, formStructure: newStructure });
@@ -301,11 +302,11 @@ export const ProtocolSchemaPage = () => {
                     (field, fIdx) => (
                       <div
                         key={fIdx}
-                        className="p-5 rounded-2xl border border-slate-100 bg-white shadow-sm grid grid-cols-12 gap-5 items-start group relative"
+                        className={`p-5 rounded-2xl border shadow-sm grid grid-cols-12 gap-5 items-start group relative transition-all ${field.type === 'heading' ? 'border-primary-200 bg-primary-50/40 col-span-12' : 'border-slate-100 bg-white'}`}
                       >
-                        <div className="col-span-4 space-y-1.5">
+                        <div className={`${field.type === 'heading' ? 'col-span-9' : 'col-span-3'} space-y-1.5`}>
                           <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">
-                            Field Label
+                            {field.type === 'heading' ? 'Heading Text' : 'Field Label'}
                           </label>
                           <input
                             type="text"
@@ -318,7 +319,8 @@ export const ProtocolSchemaPage = () => {
                                 e.target.value,
                               )
                             }
-                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500"
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500 font-bold"
+                            placeholder={field.type === 'heading' ? "Enter section heading..." : "Enter label..."}
                           />
                         </div>
                         <div className="col-span-3 space-y-1.5">
@@ -342,52 +344,82 @@ export const ProtocolSchemaPage = () => {
                             <option value="textarea">Textarea</option>
                             <option value="radio">Radio Group</option>
                             <option value="datetime-local">Date Time</option>
+                            <option value="heading">Heading (Separator)</option>
                             <option value="hearing_test_table">
                               Clinical Table
                             </option>
                           </select>
                         </div>
-                        <div className="col-span-3 space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">
-                            Field Key
-                          </label>
-                          <input
-                            type="text"
-                            value={field.fieldKey}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                activeStep,
-                                fIdx,
-                                "fieldKey",
-                                e.target.value,
-                              )
-                            }
-                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500 font-mono"
-                          />
-                        </div>
-                        <div className="col-span-1 flex flex-col items-center pt-6">
-                          <label
-                            className="flex flex-col items-center gap-1 cursor-pointer"
-                            title="Required"
-                          >
+                        {field.type !== "heading" && (
+                          <div className="col-span-3 space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">
+                              Field Key
+                            </label>
                             <input
-                              type="checkbox"
-                              checked={field.required}
+                              type="text"
+                              value={field.fieldKey}
                               onChange={(e) =>
                                 handleFieldChange(
                                   activeStep,
                                   fIdx,
-                                  "required",
-                                  e.target.checked,
+                                  "fieldKey",
+                                  e.target.value,
                                 )
                               }
-                              className="w-4 h-4 rounded text-primary-600 border-slate-300"
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500 font-mono"
                             />
-                            <span className="text-[8px] font-bold text-slate-400 uppercase">
-                              Req
-                            </span>
-                          </label>
-                        </div>
+                          </div>
+                        )}
+                        {field.type !== "heading" && (
+                          <>
+                            <div className="col-span-1 flex flex-col items-center pt-6">
+                              <label
+                                className="flex flex-col items-center gap-1 cursor-pointer"
+                                title="Required"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={field.required}
+                                  onChange={(e) =>
+                                    handleFieldChange(
+                                      activeStep,
+                                      fIdx,
+                                      "required",
+                                      e.target.checked,
+                                    )
+                                  }
+                                  className="w-4 h-4 rounded text-primary-600 border-slate-300"
+                                />
+                                <span className="text-[8px] font-bold text-slate-400 uppercase">
+                                  Req
+                                </span>
+                              </label>
+                            </div>
+                            <div className="col-span-1 flex flex-col items-center pt-6">
+                              <label
+                                className="flex flex-col items-center gap-1 cursor-pointer"
+                                title="Include in Report"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={field.includeInReport !== false}
+                                  onChange={(e) =>
+                                    handleFieldChange(
+                                      activeStep,
+                                      fIdx,
+                                      "includeInReport",
+                                      e.target.checked,
+                                    )
+                                  }
+                                  className="w-4 h-4 rounded text-brand-600 border-slate-300"
+                                />
+                                <span className="text-[8px] font-bold text-slate-400 uppercase">
+                                  Report
+                                </span>
+                              </label>
+                            </div>
+                          </>
+                        )}
                         <div className="col-span-1 flex flex-col items-center pt-6">
                           <button
                             onClick={() => handleRemoveField(activeStep, fIdx)}
