@@ -15,7 +15,8 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import logo from "../../assets/logo.png";
+import logo from "../../assets/OryxT Logo New.png";
+import logoSmall from "../../assets/OryxT Logo only-01.png";
 
 export const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -49,7 +50,7 @@ export const Sidebar = () => {
         { icon: Briefcase, label: "Program Types", path: "/programs" },
         {
           icon: CalendarDays,
-          label: "Appointments",
+          label: "Appointment Types",
           path: "/appointment-types",
         },
       ];
@@ -97,15 +98,21 @@ export const Sidebar = () => {
       className="glass h-screen sticky top-0 border-r border-white/20 flex flex-col"
     >
       <div className="p-6 flex items-center justify-between">
-        {!collapsed && (
-          <NavLink to="/" className="flex items-center ml-10">
+        <NavLink to="/" className="flex items-center">
+          {collapsed ? (
+            <img
+              src={logoSmall}
+              alt="OryxT"
+              className="h-10 w-10 object-contain mx-auto"
+            />
+          ) : (
             <img
               src={logo}
               alt="OryxT Health"
-              className="h-20 w-auto object-contain"
+              className="h-20 w-auto object-contain ml-10"
             />
-          </NavLink>
-        )}
+          )}
+        </NavLink>
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="p-2 hover:bg-white/50 rounded-lg transition-colors ml-auto"

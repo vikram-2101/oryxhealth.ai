@@ -1,30 +1,38 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Mail, Phone, Building, Users as UsersIcon, Edit, Trash2 } from 'lucide-react';
-import { institutionService, customerService } from '../services';
-import { useAuth } from '../context/AuthContext';
-import { SearchBar } from '../components/ui/SearchBar';
-import { Pagination } from '../components/ui/Pagination';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { SkeletonCard } from '../components/ui/SkeletonCard';
-import { EmptyState } from '../components/ui/EmptyState';
-import { StatusToggleSwitch } from '../components/ui/StatusToggleSwitch';
-import { FormModal } from '../components/ui/FormModal';
-import { ConfirmDialog } from '../components/ui/ConfirmDialog';
-import { InstitutionForm } from '../components/forms/InstitutionForm';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  Plus,
+  Mail,
+  Phone,
+  Building,
+  Users as UsersIcon,
+  Edit,
+  Trash2,
+} from "lucide-react";
+import { institutionService, customerService } from "../services";
+import { useAuth } from "../context/AuthContext";
+import { SearchBar } from "../components/ui/SearchBar";
+import { Pagination } from "../components/ui/Pagination";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { SkeletonCard } from "../components/ui/SkeletonCard";
+import { EmptyState } from "../components/ui/EmptyState";
+import { StatusToggleSwitch } from "../components/ui/StatusToggleSwitch";
+import { FormModal } from "../components/ui/FormModal";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { InstitutionForm } from "../components/forms/InstitutionForm";
 
 export const InstitutionsPage = () => {
   const [institutions, setInstitutions] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [search, setSearch] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedInstitution, setSelectedInstitution] = useState(null);
-   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === "super_admin";
   const itemsPerPage = 8;
 
   useEffect(() => {
@@ -35,20 +43,22 @@ export const InstitutionsPage = () => {
     try {
       setLoading(true);
       const promises = [institutionService.getAll()];
-      
+
       if (isSuperAdmin) {
         promises.push(customerService.getAll());
       }
 
       const [institutionsRes, customersRes] = await Promise.all(promises);
-      
-      setInstitutions(institutionsRes.data.institutions || institutionsRes.data);
-      
+
+      setInstitutions(
+        institutionsRes.data.institutions || institutionsRes.data,
+      );
+
       if (customersRes) {
         setCustomers(customersRes.data.customers || customersRes.data);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -74,7 +84,7 @@ export const InstitutionsPage = () => {
       setIsFormOpen(false);
       fetchData();
     } catch (error) {
-      console.error('Error saving institution:', error);
+      console.error("Error saving institution:", error);
       throw error;
     }
   };
@@ -84,7 +94,7 @@ export const InstitutionsPage = () => {
       await institutionService.delete(id);
       fetchData();
     } catch (error) {
-      console.error('Error deleting institution:', error);
+      console.error("Error deleting institution:", error);
     }
   };
 
@@ -93,7 +103,7 @@ export const InstitutionsPage = () => {
       await institutionService.toggleStatus(id);
       fetchData();
     } catch (error) {
-      console.error('Error toggling status:', error);
+      console.error("Error toggling status:", error);
     }
   };
 
@@ -101,14 +111,15 @@ export const InstitutionsPage = () => {
     const matchesSearch =
       inst.name.toLowerCase().includes(search.toLowerCase()) ||
       inst.contactPerson?.email?.toLowerCase().includes(search.toLowerCase());
-    const matchesCustomer = !selectedCustomer || inst.customer?._id === selectedCustomer;
+    const matchesCustomer =
+      !selectedCustomer || inst.customer?._id === selectedCustomer;
     return matchesSearch && matchesCustomer;
   });
 
   const totalPages = Math.ceil(filteredInstitutions.length / itemsPerPage);
   const paginatedInstitutions = filteredInstitutions.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   return (
@@ -116,9 +127,14 @@ export const InstitutionsPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Institutions</h1>
-          <p className="text-slate-600 mt-1">{institutions?.length || 0} registered institutions</p>
+          <p className="text-slate-600 mt-1">
+            {institutions?.length || 0} registered institutions
+          </p>
         </div>
-        <button onClick={handleAdd} className="btn-primary flex items-center gap-2">
+        <button
+          onClick={handleAdd}
+          className="btn-primary flex items-center gap-2"
+        >
           <Plus className="w-5 h-5" />
           Add Institution
         </button>
@@ -176,7 +192,7 @@ export const InstitutionsPage = () => {
                     {institution.logo}
                   </div>
                   <StatusToggleSwitch
-                    checked={institution.status === 'active'}
+                    checked={institution.status === "active"}
                     onChange={() => handleStatusToggle(institution._id)}
                   />
                 </div>
@@ -191,7 +207,9 @@ export const InstitutionsPage = () => {
                   <div className="space-y-2 text-sm text-slate-600 mt-3">
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4" />
-                      <span className="truncate">{institution.contactPerson?.email}</span>
+                      <span className="truncate">
+                        {institution.contactPerson?.email}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="w-4 h-4" />
@@ -203,13 +221,15 @@ export const InstitutionsPage = () => {
                 <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm">
                     <UsersIcon className="w-4 h-4 text-primary-600" />
-                    <span className="text-slate-600">{institution.usersCount || 0} users</span>
+                    <span className="text-slate-600">
+                      {institution.usersCount || 0} users
+                    </span>
                   </div>
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      institution.status === 'active'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-red-100 text-red-700'
+                      institution.status === "active"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-red-100 text-red-700"
                     }`}
                   >
                     {institution.status?.toUpperCase()}
@@ -251,7 +271,8 @@ export const InstitutionsPage = () => {
       <FormModal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
-        title={selectedInstitution ? 'Edit Institution' : 'Add New Institution'}
+        title={selectedInstitution ? "Edit Institution" : "Add Institution"}
+        size="lg"
       >
         <InstitutionForm
           institution={selectedInstitution}

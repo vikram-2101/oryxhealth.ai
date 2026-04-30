@@ -54,6 +54,16 @@ export const customerService = {
     const response = await api.patch(`/customers/${id}/status`);
     return response.data;
   },
+
+  uploadReportTemplate: async (id, htmlContent, fileName) => {
+    const response = await api.put(`/customers/${id}/report-template`, { htmlContent, fileName });
+    return response.data;
+  },
+
+  getReportTemplate: async (id) => {
+    const response = await api.get(`/customers/${id}/report-template`);
+    return response.data;
+  },
 };
 
 export const institutionService = {

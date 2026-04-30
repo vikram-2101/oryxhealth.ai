@@ -149,8 +149,13 @@ export const createUser = async (req, res, next) => {
     }
     userData.institutionAccess = accessList;
 
-    if (req.file) {
-      userData.signatureImage = `/uploads/${req.file.filename}`;
+    if (req.files) {
+      if (req.files.signatureImage && req.files.signatureImage[0]) {
+        userData.signatureImage = `/uploads/${req.files.signatureImage[0].filename}`;
+      }
+      if (req.files.photo && req.files.photo[0]) {
+        userData.photo = `/uploads/${req.files.photo[0].filename}`;
+      }
     }
 
     const user = await User.create(userData);
@@ -225,8 +230,13 @@ export const updateUser = async (req, res, next) => {
       }
     });
 
-    if (req.file) {
-      updateData.signatureImage = `/uploads/${req.file.filename}`;
+    if (req.files) {
+      if (req.files.signatureImage && req.files.signatureImage[0]) {
+        updateData.signatureImage = `/uploads/${req.files.signatureImage[0].filename}`;
+      }
+      if (req.files.photo && req.files.photo[0]) {
+        updateData.photo = `/uploads/${req.files.photo[0].filename}`;
+      }
     }
 
     if (Object.prototype.hasOwnProperty.call(userData, 'institutionAccess')) {

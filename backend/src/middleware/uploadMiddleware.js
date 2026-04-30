@@ -1,10 +1,48 @@
 import multer from 'multer';
 import path from 'path';
 
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Ensure upload directory exists - point to backend/uploads
+const uploadDir = path.resolve(__dirname, '../../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 // Set storage engine
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    const possiblePaths = [
+      path.resolve(__dirname, '../../uploads'),
+      path.resolve(process.cwd(), 'uploads'),
+      path.resolve(process.cwd(), 'backend/uploads')
+    ];
+    
+    for (const p of possiblePaths) {
+      try {
+        if (fs.existsSync(p)) {
+          return cb(null, p);
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+    
+    // Fallback: use the absolute path relative to this file and ensure it exists
+    const fallbackPath = path.resolve(__dirname, '../../uploads');
+    try {
+      if (!fs.existsSync(fallbackPath)) {
+        fs.mkdirSync(fallbackPath, { recursive: true });
+      }
+      cb(null, fallbackPath);
+    } catch (err) {
+      // Final fallback to relative path if all absolute attempts fail
+      cb(null, 'uploads');
+    }
   },
   filename: (req, file, cb) => {
     cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);

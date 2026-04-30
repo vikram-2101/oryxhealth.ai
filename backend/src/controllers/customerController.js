@@ -190,3 +190,75 @@ export const toggleCustomerStatus = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Upload / replace report template HTML for a customer
+// @route   PUT /api/customers/:id/report-template
+// @access  Private (Super Admin)
+export const uploadReportTemplate = async (req, res, next) => {
+  try {
+    const { htmlContent, fileName } = req.body;
+
+    if (!htmlContent) {
+      res.status(400);
+      throw new Error('htmlContent is required');
+    }
+
+    const customer = await Customer.findByIdAndUpdate(
+      req.params.id,
+      {
+        reportTemplate: {
+          htmlContent,
+          fileName: fileName || 'template.html',
+          uploadedAt: new Date(),
+          uploadedBy: req.user?._id || null,
+        },
+      },
+      { new: true, runValidators: false }
+    );
+
+    if (!customer) {
+      res.status(404);
+      throw new Error('Customer not found');
+    }
+
+    res.json({
+      success: true,
+      message: 'Report template uploaded successfully',
+      data: {
+        fileName: customer.reportTemplate.fileName,
+        uploadedAt: customer.reportTemplate.uploadedAt,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get report template for a customer (by accountId)
+// @route   GET /api/customers/:id/report-template
+// @access  Private
+export const getReportTemplate = async (req, res, next) => {
+  try {
+    const customer = await Customer.findById(req.params.id).select('reportTemplate name');
+
+    if (!customer) {
+      res.status(404);
+      throw new Error('Customer not found');
+    }
+
+    if (!customer.reportTemplate?.htmlContent) {
+      return res.json({
+        success: true,
+        data: null,
+        message: 'No report template configured for this account',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: customer.reportTemplate,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

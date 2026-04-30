@@ -97,15 +97,46 @@ export const ProtocolSchemaPage = () => {
 
   const handleAddField = (stepIndex) => {
     const newStructure = [...protocol.formStructure];
-    const nextFieldNum = newStructure[stepIndex].fields.length + 1;
-    newStructure[stepIndex].fields.push({
+    const fields = newStructure[stepIndex].fields;
+    const nextFieldNum = fields.length + 1;
+
+    // Logic: If the previous field was a heading or has a parent, 
+    // suggest the same parent for the new field.
+    let suggestedParent = null;
+    if (fields.length > 0) {
+      const lastField = fields[fields.length - 1];
+      suggestedParent = lastField.type === "heading" ? lastField.fieldKey : lastField.parentKey;
+    }
+
+    fields.push({
       fieldKey: `field_${nextFieldNum}`,
       label: `Field ${nextFieldNum}`,
       type: "text",
       required: false,
       includeInReport: true,
       options: [],
+      parentKey: suggestedParent || null,
     });
+    setProtocol({ ...protocol, formStructure: newStructure });
+  };
+
+  const handleToggleIndent = (stepIndex, fieldIndex) => {
+    const newStructure = [...protocol.formStructure];
+    const field = newStructure[stepIndex].fields[fieldIndex];
+    
+    if (field.parentKey) {
+      field.parentKey = null;
+    } else if (fieldIndex > 0) {
+      // Find the nearest heading above
+      let nearestHeading = null;
+      for (let i = fieldIndex - 1; i >= 0; i--) {
+        if (newStructure[stepIndex].fields[i].type === "heading") {
+          nearestHeading = newStructure[stepIndex].fields[i].fieldKey;
+          break;
+        }
+      }
+      field.parentKey = nearestHeading;
+    }
     setProtocol({ ...protocol, formStructure: newStructure });
   };
 
@@ -300,57 +331,87 @@ export const ProtocolSchemaPage = () => {
                 <div className="space-y-4">
                   {protocol.formStructure[activeStep].fields.map(
                     (field, fIdx) => (
-                      <div
-                        key={fIdx}
-                        className={`p-5 rounded-2xl border shadow-sm grid grid-cols-12 gap-5 items-start group relative transition-all ${field.type === 'heading' ? 'border-primary-200 bg-primary-50/40 col-span-12' : 'border-slate-100 bg-white'}`}
-                      >
-                        <div className={`${field.type === 'heading' ? 'col-span-9' : 'col-span-3'} space-y-1.5`}>
-                          <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">
-                            {field.type === 'heading' ? 'Heading Text' : 'Field Label'}
-                          </label>
-                          <input
-                            type="text"
-                            value={field.label}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                activeStep,
-                                fIdx,
-                                "label",
-                                e.target.value,
-                              )
-                            }
-                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500 font-bold"
-                            placeholder={field.type === 'heading' ? "Enter section heading..." : "Enter label..."}
-                          />
-                        </div>
-                        <div className="col-span-3 space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">
-                            Input Type
-                          </label>
-                          <select
-                            value={field.type}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                activeStep,
-                                fIdx,
-                                "type",
-                                e.target.value,
-                              )
-                            }
-                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500 bg-white"
-                          >
-                            <option value="text">Text</option>
-                            <option value="number">Number</option>
-                            <option value="textarea">Textarea</option>
-                            <option value="radio">Radio Group</option>
-                            <option value="datetime-local">Date Time</option>
-                            <option value="heading">Heading (Separator)</option>
-                            <option value="hearing_test_table">
-                              Clinical Table
-                            </option>
-                          </select>
-                        </div>
-                        {field.type !== "heading" && (
+                      <div key={fIdx} className="relative group">
+                        {/* Hierarchy Line */}
+                        {field.parentKey && (
+                          <div className="absolute left-[20px] top-[-16px] bottom-0 w-0.5 bg-primary-100 group-last:h-[40px]" />
+                        )}
+                        {field.parentKey && (
+                          <div className="absolute left-[20px] top-[24px] w-4 h-0.5 bg-primary-100" />
+                        )}
+
+                        <div
+                          className={`p-5 rounded-2xl border shadow-sm grid grid-cols-12 gap-5 items-start relative transition-all ${
+                            field.type === "heading"
+                              ? "border-primary-200 bg-primary-50/40 col-span-12"
+                              : field.parentKey
+                              ? "border-slate-100 bg-white ml-10"
+                              : "border-slate-100 bg-white"
+                          }`}
+                        >
+                          {/* Label/Heading Input */}
+                          <div className="col-span-3 space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">
+                              {field.type === "heading"
+                                ? "Heading Title"
+                                : "Field Label"}
+                            </label>
+                            <input
+                              type="text"
+                              value={field.label}
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  activeStep,
+                                  fIdx,
+                                  "label",
+                                  e.target.value,
+                                )
+                              }
+                              className={`w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500 ${
+                                field.type === "heading"
+                                  ? "bg-white font-bold text-slate-700"
+                                  : "font-bold"
+                              }`}
+                              placeholder={
+                                field.type === "heading"
+                                  ? "Section Name..."
+                                  : "Enter label..."
+                              }
+                            />
+                          </div>
+
+                          {/* Input Type */}
+                          <div className="col-span-3 space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">
+                              Input Type
+                            </label>
+                            <select
+                              value={field.type}
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  activeStep,
+                                  fIdx,
+                                  "type",
+                                  e.target.value,
+                                )
+                              }
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500 bg-white"
+                            >
+                              <option value="text">Text</option>
+                              <option value="number">Number</option>
+                              <option value="textarea">Textarea</option>
+                              <option value="radio">Radio Group</option>
+                              <option value="datetime-local">Date Time</option>
+                              <option value="heading">
+                                Heading (Section Title)
+                              </option>
+                              <option value="hearing_test_table">
+                                Clinical Table
+                              </option>
+                            </select>
+                          </div>
+
+                          {/* Field Key - For Headings too (as they act as IDs) */}
                           <div className="col-span-3 space-y-1.5">
                             <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">
                               Field Key
@@ -369,89 +430,66 @@ export const ProtocolSchemaPage = () => {
                               className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-primary-500 font-mono"
                             />
                           </div>
-                        )}
-                        {field.type !== "heading" && (
-                          <>
-                            <div className="col-span-1 flex flex-col items-center pt-6">
-                              <label
-                                className="flex flex-col items-center gap-1 cursor-pointer"
-                                title="Required"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={field.required}
-                                  onChange={(e) =>
-                                    handleFieldChange(
-                                      activeStep,
-                                      fIdx,
-                                      "required",
-                                      e.target.checked,
-                                    )
-                                  }
-                                  className="w-4 h-4 rounded text-primary-600 border-slate-300"
-                                />
-                                <span className="text-[8px] font-bold text-slate-400 uppercase">
-                                  Req
-                                </span>
-                              </label>
-                            </div>
-                            <div className="col-span-1 flex flex-col items-center pt-6">
-                              <label
-                                className="flex flex-col items-center gap-1 cursor-pointer"
-                                title="Include in Report"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={field.includeInReport !== false}
-                                  onChange={(e) =>
-                                    handleFieldChange(
-                                      activeStep,
-                                      fIdx,
-                                      "includeInReport",
-                                      e.target.checked,
-                                    )
-                                  }
-                                  className="w-4 h-4 rounded text-brand-600 border-slate-300"
-                                />
-                                <span className="text-[8px] font-bold text-slate-400 uppercase">
-                                  Report
-                                </span>
-                              </label>
-                            </div>
-                          </>
-                        )}
-                        <div className="col-span-1 flex flex-col items-center pt-6">
-                          <button
-                            onClick={() => handleRemoveField(activeStep, fIdx)}
-                            className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
 
-                        {field.type === "radio" && (
-                          <div className="col-span-12 flex justify-start mt-1">
+                          {/* Actions and Toggles */}
+                          <div className="col-span-3 flex items-center gap-4 pt-6">
+                            {field.type !== "heading" && (
+                              <>
+                                <label
+                                  className="flex flex-col items-center gap-1 cursor-pointer"
+                                  title="Required"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={field.required}
+                                    onChange={(e) =>
+                                      handleFieldChange(
+                                        activeStep,
+                                        fIdx,
+                                        "required",
+                                        e.target.checked,
+                                      )
+                                    }
+                                    className="w-4 h-4 rounded text-primary-600 border-slate-300"
+                                  />
+                                  <span className="text-[8px] font-bold text-slate-400 uppercase">
+                                    Req
+                                  </span>
+                                </label>
+                                <label
+                                  className="flex flex-col items-center gap-1 cursor-pointer"
+                                  title="Include in Report"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={field.includeInReport !== false}
+                                    onChange={(e) =>
+                                      handleFieldChange(
+                                        activeStep,
+                                        fIdx,
+                                        "includeInReport",
+                                        e.target.checked,
+                                      )
+                                    }
+                                    className="w-4 h-4 rounded text-brand-600 border-slate-300"
+                                  />
+                                  <span className="text-[8px] font-bold text-slate-400 uppercase">
+                                    Report
+                                  </span>
+                                </label>
+                              </>
+                            )}
+
                             <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setShowOptionsModal({
-                                  stepIndex: activeStep,
-                                  fieldIndex: fIdx,
-                                });
-                              }}
-                              className="text-[10px] font-bold text-primary-600 uppercase hover:underline"
+                              onClick={() => handleRemoveField(activeStep, fIdx)}
+                              className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all ml-auto"
                             >
-                              Manage Options{" "}
-                              {field.options?.length > 0
-                                ? `(${field.options.length})`
-                                : ""}
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
-                        )}
 
-                        {field.type === "hearing_test_table" && (
-                          <div className="col-span-12 mt-2 border-t border-slate-50 pt-3">
-                            <div className="flex items-center justify-between mb-4">
+                          {field.type === "radio" && (
+                            <div className="col-span-12 flex justify-start mt-1">
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
@@ -462,63 +500,89 @@ export const ProtocolSchemaPage = () => {
                                 }}
                                 className="text-[10px] font-bold text-primary-600 uppercase hover:underline"
                               >
-                                Manage Table Rows{" "}
+                                Manage Options{" "}
                                 {field.options?.length > 0
                                   ? `(${field.options.length})`
                                   : ""}
                               </button>
                             </div>
+                          )}
 
-                            <div className="bg-slate-50/50 rounded-xl border border-slate-100 overflow-hidden">
-                              <table className="w-full text-left border-collapse">
-                                <thead className="bg-white border-b border-slate-100">
-                                  <tr>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                      Test Name
-                                    </th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
-                                      Left Ear
-                                    </th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
-                                      Right Ear
-                                    </th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                      Remarks
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {(field.options || []).map((row, rIdx) => (
-                                    <tr key={rIdx} className="border-b border-slate-50/50">
-                                      <td className="px-4 py-2 text-xs font-bold text-slate-600 italic">
-                                        {row}
-                                      </td>
-                                      <td className="px-4 py-2 text-center opacity-20">
-                                        <div className="w-8 h-4 bg-slate-200 rounded-full mx-auto" />
-                                      </td>
-                                      <td className="px-4 py-2 text-center opacity-20">
-                                        <div className="w-8 h-4 bg-slate-200 rounded-full mx-auto" />
-                                      </td>
-                                      <td className="px-4 py-2 opacity-20">
-                                        <div className="w-full h-4 bg-slate-100 rounded" />
-                                      </td>
-                                    </tr>
-                                  ))}
-                                  {(field.options || []).length === 0 && (
+                          {field.type === "hearing_test_table" && (
+                            <div className="col-span-12 mt-2 border-t border-slate-50 pt-3">
+                              <div className="flex items-center justify-between mb-4">
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setShowOptionsModal({
+                                      stepIndex: activeStep,
+                                      fieldIndex: fIdx,
+                                    });
+                                  }}
+                                  className="text-[10px] font-bold text-primary-600 uppercase hover:underline"
+                                >
+                                  Manage Table Rows{" "}
+                                  {field.options?.length > 0
+                                    ? `(${field.options.length})`
+                                    : ""}
+                                </button>
+                              </div>
+
+                              <div className="bg-slate-50/50 rounded-xl border border-slate-100 overflow-hidden">
+                                <table className="w-full text-left border-collapse">
+                                  <thead className="bg-white border-b border-slate-100">
                                     <tr>
-                                      <td
-                                        colSpan={4}
-                                        className="px-4 py-8 text-center text-[10px] font-bold text-slate-400 uppercase italic"
-                                      >
-                                        No rows defined. Click "Manage Table Rows" to add tests.
-                                      </td>
+                                      <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        Test Name
+                                      </th>
+                                      <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                                        Left Ear
+                                      </th>
+                                      <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                                        Right Ear
+                                      </th>
+                                      <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        Remarks
+                                      </th>
                                     </tr>
-                                  )}
-                                </tbody>
-                              </table>
+                                  </thead>
+                                  <tbody>
+                                    {(field.options || []).map((row, rIdx) => (
+                                      <tr
+                                        key={rIdx}
+                                        className="border-b border-slate-50/50"
+                                      >
+                                        <td className="px-4 py-2 text-xs font-bold text-slate-600 italic">
+                                          {row}
+                                        </td>
+                                        <td className="px-4 py-2 text-center opacity-20">
+                                          <div className="w-8 h-4 bg-slate-200 rounded-full mx-auto" />
+                                        </td>
+                                        <td className="px-4 py-2 text-center opacity-20">
+                                          <div className="w-8 h-4 bg-slate-200 rounded-full mx-auto" />
+                                        </td>
+                                        <td className="px-4 py-2 opacity-20">
+                                          <div className="w-full h-4 bg-slate-100 rounded" />
+                                        </td>
+                                      </tr>
+                                    ))}
+                                    {(field.options || []).length === 0 && (
+                                      <tr>
+                                        <td
+                                          colSpan={4}
+                                          className="px-4 py-8 text-center text-[10px] font-bold text-slate-400 uppercase italic"
+                                        >
+                                          No rows defined. Click "Manage Table
+                                          Rows" to add tests.
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     ),
                   )}

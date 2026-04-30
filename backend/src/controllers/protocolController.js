@@ -3,7 +3,7 @@ import Protocol from '../models/Protocol.js';
 export const getProtocols = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 100;
     const search = req.query.search || '';
     const accountId = req.query.accountId;
     const categoryId = req.query.categoryId;

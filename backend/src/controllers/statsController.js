@@ -23,7 +23,7 @@ export const getDashboardStats = async (req, res, next) => {
     };
 
     if (req.userRole === 'super_admin') {
-      const [totalCustomers, totalInstitutions, totalUsers, totalPanels, totalPatients, totalEvents, patientsByInstitution] =
+      const [totalCustomers, totalInstitutions, totalUsers, totalPanels, totalPatients, totalEvents, patientsByInstitution, patientsByCustomer] =
         await Promise.all([
           Customer.countDocuments(),
           Institution.countDocuments(),
@@ -51,6 +51,26 @@ export const getDashboardStats = async (req, res, next) => {
             { $project: { name: "$instInfo.name", count: 1 } },
             { $sort: { count: -1 } },
             { $limit: 5 }
+          ]),
+          Patient.aggregate([
+            { $match: { accountId: { $ne: null } } },
+            {
+              $group: {
+                _id: "$accountId",
+                count: { $sum: 1 }
+              }
+            },
+            {
+              $lookup: {
+                from: "customers",
+                localField: "_id",
+                foreignField: "_id",
+                as: "accountInfo"
+              }
+            },
+            { $unwind: "$accountInfo" },
+            { $project: { name: "$accountInfo.name", count: 1 } },
+            { $sort: { count: -1 } }
           ])
         ]);
       
@@ -62,6 +82,7 @@ export const getDashboardStats = async (req, res, next) => {
         totalPatients,
         totalEvents,
         patientsByInstitution,
+        patientsByCustomer,
         accountName: 'Super Admin'
       };
 

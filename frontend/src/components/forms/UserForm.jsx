@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FormInput } from "../ui/FormInput";
 import { FormSelect } from "../ui/FormSelect";
+import { PhoneInput } from "../ui/PhoneInput";
 import { institutionService, customerService } from "../../services";
 import {
   Upload,
@@ -16,6 +17,9 @@ import {
 } from "lucide-react";
 import { GetCountries, GetState, GetCity } from "react-country-state-city";
 import { useAuth } from "../../context/AuthContext";
+import { API_BASE_URL } from "../../services/api";
+
+const IMAGE_BASE_URL = API_BASE_URL.replace("/api", "");
 
 const ROLE_OPTIONS = [
   { value: "Doctor", label: "Doctor" },
@@ -33,7 +37,6 @@ const SEX_OPTIONS = [
   { value: "Male", label: "Male" },
   { value: "Female", label: "Female" },
   { value: "Other", label: "Other" },
-  { value: "Any", label: "Any" },
 ];
 
 export const UserForm = ({ user, onSubmit, onCancel }) => {
@@ -44,7 +47,8 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
     email: user?.email || "",
-    phone: user?.phone || "",
+    phone: user?.phone?.replace(/^\+\d+/, "") || user?.phone || "",
+    phoneCountry: user?.phone?.match(/^\+\d+/)?.[0] || "+91",
     country: user?.country || "India",
     state: user?.state || "",
     city: user?.city || "",
@@ -52,7 +56,10 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
     role: user?.role || "",
     admin: user?.admin || "none",
     sex: user?.sex || "",
-    accountId: user?.accountId?._id || user?.accountId || "",
+    accountId:
+      user?.accountId?._id ||
+      user?.accountId ||
+      (!isSuperAdmin ? currentUser?.accountId : ""),
     institution: user?.institution?._id || user?.institution || "",
     institutionAccess: user?.institutionAccess?.map((i) => i._id || i) || [],
     registrationNumber: user?.registrationNumber || "",
@@ -226,7 +233,12 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
 
       // Concat name for backward compatibility if needed, but we now send firstName/lastName
       Object.keys(formData).forEach((key) => {
-        if (Array.isArray(formData[key])) {
+        if (key === "phone") {
+          const fullPhone = `${formData.phoneCountry}${formData.phone}`.replace(/\s+/g, "");
+          formDataToSend.append("phone", fullPhone);
+        } else if (key === "phoneCountry") {
+          // skip
+        } else if (Array.isArray(formData[key])) {
           formDataToSend.append(key, JSON.stringify(formData[key]));
         } else {
           formDataToSend.append(key, formData[key] || "");
@@ -311,7 +323,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 max-h-[85vh] overflow-y-auto px-4 pb-10 scrollbar-thin"
+      className="space-y-4 max-h-[85vh] overflow-y-auto px-4 pb-4 scrollbar-thin"
     >
       {submitError && (
         <div className="p-4 bg-red-50 border border-red-100 text-red-700 rounded-xl text-sm font-medium">
@@ -320,11 +332,13 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
       )}
 
       {/* Section 1: Personal Information */}
-      <div className="bg-white rounded-[15px] p-6 shadow-sm border border-slate-200 space-y-6">
-        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">Personal Information</h3>
-        
+      <div className="bg-white rounded-[15px] p-5 shadow-sm border border-slate-200 space-y-4">
+        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-1">
+          Personal Information
+        </h3>
+
         {/* Media: Photo & Signature */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Profile Photo Field */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-slate-700">
@@ -336,7 +350,11 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
               {photoPreview ? (
                 <div className="relative w-full h-full flex items-center justify-center p-2 bg-white">
                   <img
-                    src={photoPreview}
+                    src={
+                      photoPreview.startsWith("data:")
+                        ? photoPreview
+                        : `${IMAGE_BASE_URL}${photoPreview}`
+                    }
                     alt="Profile Preview"
                     className="max-h-full max-w-full object-contain"
                   />
@@ -380,7 +398,11 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
               {signaturePreview ? (
                 <div className="relative w-full h-full flex items-center justify-center p-2 bg-white">
                   <img
-                    src={signaturePreview}
+                    src={
+                      signaturePreview.startsWith("data:")
+                        ? signaturePreview
+                        : `${IMAGE_BASE_URL}${signaturePreview}`
+                    }
                     alt="Signature"
                     className="max-h-full max-w-full object-contain"
                   />
@@ -435,17 +457,22 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
             placeholder="Last Name"
           />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Sex <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Sex <span className="text-red-500">*</span>
+            </label>
             <div className="flex p-1 bg-slate-100 rounded-[12px] w-full border border-slate-200 shadow-inner h-[46px]">
-              {["Male", "Female", "Other", "Any"].map((option) => (
+              {["Male", "Female", "Other"].map((option) => (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => handleChange({ target: { name: 'sex', value: option } })}
-                  className={`flex-1 rounded-[10px] text-xs font-semibold transition-all duration-300 ${formData.sex === option
-                    ? "bg-white text-primary-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                    }`}
+                  onClick={() =>
+                    handleChange({ target: { name: "sex", value: option } })
+                  }
+                  className={`flex-1 rounded-[10px] text-xs font-semibold transition-all duration-300 ${
+                    formData.sex === option
+                      ? "bg-primary-600 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
                 >
                   {option}
                 </button>
@@ -456,10 +483,14 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
         </div>
       </div>
 
-      {/* Section 2: User Role */}
-      <div className="bg-white rounded-[15px] p-6 shadow-sm border border-slate-200 space-y-6">
-        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">User Role</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Section 2: User Role Details */}
+      <div className="bg-white rounded-[15px] p-5 shadow-sm border border-slate-200 space-y-4">
+        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-1">
+          User Role Details
+        </h3>
+        <div
+          className={`grid grid-cols-1 ${isSuperAdmin ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4 items-end`}
+        >
           <FormSelect
             label="Professional Role"
             name="role"
@@ -470,7 +501,53 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
             required
             placeholder="Select Role"
           />
-          {/* Designation moved to Doctor fields below */}
+
+          {isSuperAdmin ? (
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">
+                Account / Customer
+              </label>
+              <select
+                name="accountId"
+                value={formData.accountId}
+                onChange={handleChange}
+                className={`w-full h-[46px] px-4 py-2.5 rounded-xl border transition-all ${
+                  errors.accountId
+                    ? "border-red-300 focus:border-red-500"
+                    : "border-slate-300 focus:border-primary-500"
+                } focus:outline-none text-sm`}
+              >
+                <option value="">Select Account</option>
+                {customers.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              {errors.accountId && (
+                <p className="text-xs text-red-600">{errors.accountId}</p>
+              )}
+            </div>
+          ) : null}
+
+          <FormSelect
+            label="Primary Institution"
+            name="institution"
+            value={formData.institution}
+            onChange={handleChange}
+            options={filteredInstitutions.map((i) => ({
+              value: i._id,
+              label: i.name,
+            }))}
+            error={errors.institution}
+            required
+            placeholder={
+              !formData.accountId && isSuperAdmin
+                ? "Select an account first"
+                : "Select Institution"
+            }
+            disabled={!formData.accountId}
+          />
         </div>
 
         {/* Conditional Doctor Fields */}
@@ -480,7 +557,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 overflow-hidden"
+              className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-100 overflow-hidden"
             >
               <FormInput
                 label="Designation"
@@ -512,63 +589,13 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-
-      {/* Section 3: Account & Institution Details */}
-      <div className="bg-white rounded-[15px] p-6 shadow-sm border border-slate-200 space-y-6">
-        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">Account & Institution Details</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Account / Customer</label>
-            {isSuperAdmin ? (
-              <select
-                name="accountId"
-                value={formData.accountId}
-                onChange={handleChange}
-                className={`w-full px-4 py-2.5 rounded-xl border transition-all ${
-                  errors.accountId ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-primary-500'
-                } focus:outline-none text-sm`}
-              >
-                <option value="">Select Account</option>
-                {customers.map((c) => (
-                  <option key={c._id} value={c._id}>{c.name}</option>
-                ))}
-              </select>
-            ) : (
-              <div className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 font-medium h-[46px] flex items-center">
-                {customers.find(c => c._id === formData.accountId)?.name || user?.accountId?.name || "Access Restricted"}
-              </div>
-            )}
-            {errors.accountId && <p className="text-xs text-red-600">{errors.accountId}</p>}
-          </div>
-
-          <FormSelect
-            label="Primary Institution"
-            name="institution"
-            value={formData.institution}
-            onChange={handleChange}
-            options={filteredInstitutions.map((i) => ({
-              value: i._id,
-              label: i.name,
-            }))}
-            error={errors.institution}
-            required
-            placeholder={
-              !formData.accountId && isSuperAdmin
-                ? "Select an account first"
-                : "Select Institution"
-            }
-            disabled={!formData.accountId}
-          />
-        </div>
 
         {/* Additional Access */}
         <AnimatePresence>
           {formData.institution && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
+              animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               className="space-y-3 pt-2 border-t border-slate-100"
             >
@@ -587,7 +614,9 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
                         type="checkbox"
                         checked={formData.institutionAccess.includes(inst._id)}
                         onChange={() => {
-                          const access = formData.institutionAccess.includes(inst._id)
+                          const access = formData.institutionAccess.includes(
+                            inst._id,
+                          )
                             ? formData.institutionAccess.filter(
                                 (id) => id !== inst._id,
                               )
@@ -616,38 +645,62 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
       </div>
 
       {/* Section 4: Admin Access */}
-      <div className="bg-white rounded-[15px] p-6 shadow-sm border border-slate-200 space-y-6">
-        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">Admin Portal Access</h3>
-        <div className="space-y-1">
-          <div className="flex p-1 bg-slate-100 rounded-[12px] w-full border border-slate-200 shadow-inner h-[50px]">
-            {[
-              { value: "none", label: "None" },
-              { value: "account", label: "Account Admin" },
-              { value: "institution", label: "Institution Admin" }
-            ].map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleChange({ target: { name: 'admin', value: option.value } })}
-                className={`flex-1 rounded-[10px] text-xs font-semibold transition-all duration-300 ${formData.admin === option.value
-                  ? "bg-white text-primary-600 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+      <div className="bg-white rounded-[15px] p-5 shadow-sm border border-slate-200 space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider whitespace-nowrap">
+            Admin Portal Access
+          </h3>
+          <div className="flex-1 max-w-md">
+            <div className="flex p-1 bg-slate-100 rounded-[12px] w-full border border-slate-200 shadow-inner h-[50px]">
+              {[
+                { value: "none", label: "None" },
+                { value: "account", label: "Account Admin" },
+                { value: "institution", label: "Institution Admin" },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() =>
+                    handleChange({
+                      target: { name: "admin", value: option.value },
+                    })
+                  }
+                  className={`flex-1 rounded-[10px] text-xs font-semibold transition-all duration-300 ${
+                    formData.admin === option.value
+                      ? "bg-primary-600 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
                   }`}
-              >
-                {option.label}
-              </button>
-            ))}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <p className="text-[10px] text-slate-400 mt-2 italic px-2">
-            Determines if this user can login to the oxyhealth.ai admin dashboard.
-          </p>
         </div>
+        <p className="text-[10px] text-slate-400 italic px-2">
+          Determines if this user can login to the OryxT admin Portal.
+        </p>
       </div>
 
       {/* Section 5: Login Details */}
-      <div className="bg-white rounded-[15px] p-6 shadow-sm border border-slate-200 space-y-6">
-        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">Login Details</h3>
+      <div className="bg-white rounded-[15px] p-5 shadow-sm border border-slate-200 space-y-4">
+        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-1">
+          Login Details
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <PhoneInput
+            label="Mobile Number"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            countryCode={formData.phoneCountry}
+            onCountryCodeChange={(code) =>
+              setFormData((prev) => ({ ...prev, phoneCountry: code }))
+            }
+            error={errors.phone}
+            required
+            placeholder="1234567890"
+          />
           <FormInput
             label="Email Address"
             name="email"
@@ -657,18 +710,9 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
             required
             placeholder="example@email.com"
           />
-          <FormInput
-            label="Phone Number"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            error={errors.phone}
-            required
-            placeholder="1234567890"
-          />
         </div>
         <FormInput
-          label={user ? "New Password (Optional)" : "Account Password"}
+          label={user ? "New Password (Optional)" : "User Password"}
           name="password"
           type="password"
           value={formData.password}
@@ -680,16 +724,22 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
       </div>
 
       {/* Section 6: Address Information */}
-      <div className="bg-white rounded-[15px] p-6 shadow-sm border border-slate-200 space-y-6">
-        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-2">Address Information</h3>
+      <div className="bg-white rounded-[15px] p-5 shadow-sm border border-slate-200 space-y-4">
+        <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-1">
+          Address Information
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Country
+            </label>
             <select
               name="country"
               value={formData.country}
               onChange={(e) => {
-                const country = countriesList.find((c) => c.name === e.target.value);
+                const country = countriesList.find(
+                  (c) => c.name === e.target.value,
+                );
                 setFormData((prev) => ({
                   ...prev,
                   country: e.target.value,
@@ -701,36 +751,47 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 transition-all outline-none text-sm"
             >
               {countriesList.map((c) => (
-                <option key={c.id} value={c.name}>{c.name}</option>
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
               ))}
             </select>
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              State
+            </label>
             <select
               name="state"
               value={formData.state}
               onChange={(e) => {
-                const country = countriesList.find((c) => c.name === formData.country);
+                const country = countriesList.find(
+                  (c) => c.name === formData.country,
+                );
                 const state = stateList.find((s) => s.name === e.target.value);
                 setFormData((prev) => ({
                   ...prev,
                   state: e.target.value,
                   city: "",
                 }));
-                if (country && state) GetCity(country.id, state.id).then(setCityList);
+                if (country && state)
+                  GetCity(country.id, state.id).then(setCityList);
               }}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 transition-all outline-none text-sm disabled:opacity-50"
               disabled={!formData.country}
             >
               <option value="">Select State</option>
               {stateList.map((s) => (
-                <option key={s.id} value={s.name}>{s.name}</option>
+                <option key={s.id} value={s.name}>
+                  {s.name}
+                </option>
               ))}
             </select>
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              City
+            </label>
             <select
               name="city"
               value={formData.city}
@@ -740,13 +801,17 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
             >
               <option value="">Select City</option>
               {cityList.map((c) => (
-                <option key={c.id} value={c.name}>{c.name}</option>
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
               ))}
             </select>
           </div>
         </div>
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-slate-700 mb-1">Full Address</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Full Address
+          </label>
           <textarea
             name="address"
             rows={2}
@@ -759,7 +824,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-4 pt-6 border-t border-slate-100">
+      <div className="flex gap-4 pt-4 border-t border-slate-100">
         <button
           type="button"
           onClick={onCancel}

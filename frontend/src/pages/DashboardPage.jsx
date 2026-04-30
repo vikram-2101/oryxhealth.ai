@@ -109,7 +109,7 @@ export const DashboardPage = () => {
       iconBg: "bg-blue-500/10",
       iconColor: "text-blue-600",
       path: "#",
-      show: true,
+      show: !isSuperAdmin,
     },
     {
       id: "events",
@@ -120,7 +120,7 @@ export const DashboardPage = () => {
       iconBg: "bg-rose-500/10",
       iconColor: "text-rose-600",
       path: "#",
-      show: true,
+      show: !isSuperAdmin,
     },
     {
       id: "customers",
@@ -208,7 +208,7 @@ export const DashboardPage = () => {
       {/* KPI Cards */}
       <motion.div
         variants={item}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 gap-4"
       >
         {kpiCards.map((s) => (
           <motion.div
@@ -247,25 +247,31 @@ export const DashboardPage = () => {
       </motion.div>
 
       {/* Analytics Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Line Chart */}
         <motion.div
           variants={item}
-          className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 max-w-[850px]"
+          className="lg:col-span-2 rounded-[15px] border border-slate-200 bg-white p-6 max-w-[850px]"
         >
           <div className="mb-6">
             <div>
               <h2 className="text-sm font-semibold text-slate-900">
-                Patient Distribution
+                {isSuperAdmin ? "Account Distribution" : "Patient Distribution"}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Total patients per institution
+                {isSuperAdmin
+                  ? "Total patients per account"
+                  : "Total patients per institution"}
               </p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
-              data={stats?.patientsByInstitution || []}
+              data={
+                (isSuperAdmin
+                  ? stats?.patientsByCustomer
+                  : stats?.patientsByInstitution) || []
+              }
               layout="vertical"
               margin={{ left: 0, right: 30 }}
             >

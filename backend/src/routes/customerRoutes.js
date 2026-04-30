@@ -6,6 +6,8 @@ import {
   updateCustomer,
   deleteCustomer,
   toggleCustomerStatus,
+  uploadReportTemplate,
+  getReportTemplate,
 } from '../controllers/customerController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { requireRole } from '../middleware/roleMiddleware.js';
@@ -23,5 +25,7 @@ router
   .put(updateCustomer)
   .delete(deleteCustomer);
 router.patch('/:id/status', toggleCustomerStatus);
+router.put('/:id/report-template', uploadReportTemplate);
+router.get('/:id/report-template', getReportTemplate);
 
 export default router;

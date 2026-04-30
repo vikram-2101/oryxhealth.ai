@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { FormInput } from "../ui/FormInput";
+import { PhoneInput } from "../ui/PhoneInput";
 import { Upload, MapPin, X } from "lucide-react";
 import { GetCountries, GetState, GetCity } from "react-country-state-city";
 
@@ -7,14 +8,12 @@ export const CustomerForm = ({ customer, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
     name: customer?.name || "",
     shortName: customer?.shortName || "",
-    username: customer?.username || "",
-    password: "",
     welcomeMessage: customer?.welcomeMessage || "",
     tagline: customer?.tagline || "",
     contactName: customer?.contactPerson?.name || "",
     contactEmail: customer?.contactPerson?.email || "",
     contactMobile: customer?.contactPerson?.phone || "",
-    contactMobileCountry: customer?.contactPerson?.phoneCountry || "India",
+    contactMobileCountry: customer?.contactPerson?.phoneCountry || "+91",
     country: customer?.address?.country || "India",
     state: customer?.address?.state || "",
     city: customer?.address?.city || "",
@@ -135,9 +134,6 @@ export const CustomerForm = ({ customer, onSubmit, onCancel }) => {
     if (!formData.name.trim()) newErrors.name = "Account name is required";
     if (!formData.shortName.trim())
       newErrors.shortName = "Short name is required";
-    if (!formData.username.trim()) newErrors.username = "Username is required";
-    if (!customer && !formData.password.trim())
-      newErrors.password = "Password is required for new accounts";
 
     if (!formData.contactName.trim())
       newErrors.contactName = "Contact name is required";
@@ -171,7 +167,6 @@ export const CustomerForm = ({ customer, onSubmit, onCancel }) => {
         const submitData = {
           name: formData.name,
           shortName: formData.shortName,
-          username: formData.username,
           welcomeMessage: formData.welcomeMessage,
           tagline: formData.tagline,
           logo: logoPreview,
@@ -190,10 +185,6 @@ export const CustomerForm = ({ customer, onSubmit, onCancel }) => {
             pincode: formData.pincode,
           },
         };
-
-        if (formData.password) {
-          submitData.password = formData.password;
-        }
 
         await onSubmit(submitData);
       } catch (err) {
@@ -214,245 +205,6 @@ export const CustomerForm = ({ customer, onSubmit, onCancel }) => {
       onSubmit={handleSubmit}
       className="space-y-6 max-h-[80vh] overflow-y-auto px-2 pb-4 scrollbar-thin"
     >
-      {/* Account Details */}
-      <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100">
-        <h2 className="text-lg font-bold mb-4 text-slate-800">
-          Account Details
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormInput
-            label="Account Name"
-            name="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            error={errors.name}
-            required
-            placeholder="e.g., MedVita Health Systems"
-          />
-          <FormInput
-            label="Short Name"
-            name="shortName"
-            maxLength="10"
-            value={formData.shortName}
-            onChange={(e) =>
-              setFormData({ ...formData, shortName: e.target.value })
-            }
-            error={errors.shortName}
-            required
-            placeholder="e.g., MVH"
-          />
-        </div>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormInput
-            label="Welcome Message"
-            name="welcomeMessage"
-            maxLength="100"
-            value={formData.welcomeMessage}
-            onChange={(e) =>
-              setFormData({ ...formData, welcomeMessage: e.target.value })
-            }
-            placeholder="e.g., Welcome to MedVita!"
-          />
-          <FormInput
-            label="Tagline"
-            name="tagline"
-            maxLength="100"
-            value={formData.tagline}
-            onChange={(e) =>
-              setFormData({ ...formData, tagline: e.target.value })
-            }
-            placeholder="e.g., Caring for life"
-          />
-        </div>
-      </div>
-
-      {/* Login Credentials */}
-      <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100">
-        <h2 className="text-lg font-bold mb-4 text-slate-800">
-          Admin Credentials
-        </h2>
-        <p className="text-sm text-slate-500 mb-4">
-          These credentials will be used down the line for customer portal
-          login.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormInput
-            label="Username"
-            name="username"
-            value={formData.username}
-            onChange={(e) =>
-              setFormData({ ...formData, username: e.target.value })
-            }
-            error={errors.username}
-            required
-            placeholder="e.g., medvita_admin"
-          />
-          <FormInput
-            label="Password"
-            name="password"
-            type="password"
-            placeholder={
-              customer ? "Leave blank to keep unchanged" : "Enter password"
-            }
-            value={formData.password}
-            onChange={(e) =>
-              setFormData({ ...formData, password: e.target.value })
-            }
-            error={errors.password}
-            required={!customer}
-          />
-        </div>
-      </div>
-
-      {/* Contact Person Details */}
-      <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100">
-        <h2 className="text-lg font-bold mb-4 text-slate-800">
-          Contact Person Details
-        </h2>
-        <div className="space-y-4">
-          <FormInput
-            label="Full Name"
-            name="contactName"
-            value={formData.contactName}
-            onChange={(e) =>
-              setFormData({ ...formData, contactName: e.target.value })
-            }
-            error={errors.contactName}
-            required
-            placeholder="e.g., Sarah Chen"
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormInput
-              label="Mobile Number"
-              name="contactMobile"
-              value={formData.contactMobile}
-              onChange={(e) =>
-                setFormData({ ...formData, contactMobile: e.target.value })
-              }
-              error={errors.contactMobile}
-              required
-              placeholder="e.g., +1 555-0101"
-            />
-            <FormInput
-              label="Email Address"
-              name="contactEmail"
-              type="email"
-              value={formData.contactEmail}
-              onChange={(e) =>
-                setFormData({ ...formData, contactEmail: e.target.value })
-              }
-              error={errors.contactEmail}
-              required
-              placeholder="e.g., sarah@medvita.com"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Address Details */}
-      <div className="border border-slate-200 rounded-2xl p-6 bg-slate-50/50 space-y-6">
-        <div className="flex items-center gap-2 mb-2">
-          <MapPin className="w-5 h-5 text-primary-600" />
-          <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider">
-            Address Details
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700 ml-1">
-              Country <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="country"
-              value={formData.country}
-              onChange={handleCountryChange}
-              className={`w-full px-4 py-2.5 bg-white border ${errors.country ? "border-red-300" : "border-slate-300"} rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none`}
-            >
-              <option value="">
-                {countriesList.length === 0
-                  ? "Loading countries..."
-                  : "Select Country"}
-              </option>
-              {countriesList.map((c) => (
-                <option key={c.id} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700 ml-1">
-              State <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="state"
-              value={formData.state}
-              onChange={handleStateChange}
-              disabled={!formData.country || stateList.length === 0}
-              className={`w-full px-4 py-2.5 bg-white border ${errors.state ? "border-red-300" : "border-slate-300"} rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400`}
-            >
-              <option value="">
-                {formData.country && stateList.length === 0
-                  ? "Loading states..."
-                  : "Select State"}
-              </option>
-              {stateList.map((s) => (
-                <option key={s.id} value={s.name}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-700 ml-1">
-            City <span className="text-red-500">*</span>
-          </label>
-          <select
-            name="city"
-            value={formData.city}
-            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            disabled={!formData.state || cityList.length === 0}
-            className={`w-full px-4 py-2.5 bg-white border ${errors.city ? "border-red-300" : "border-slate-300"} rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400`}
-          >
-            <option value="">
-              {formData.state && cityList.length === 0
-                ? "Loading cities..."
-                : "Select City"}
-            </option>
-            {cityList.map((c) => (
-              <option key={c.id} value={c.name}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <FormInput
-            label="Address"
-            name="address"
-            value={formData.address}
-            onChange={(e) =>
-              setFormData({ ...formData, address: e.target.value })
-            }
-            placeholder="Street address, building, apartment..."
-          />
-          <FormInput
-            label="Pincode"
-            name="pincode"
-            value={formData.pincode}
-            onChange={(e) =>
-              setFormData({ ...formData, pincode: e.target.value })
-            }
-            placeholder="ZIP / Pincode"
-          />
-        </div>
-      </div>
-
       {/* Media Dropzones */}
       <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100">
         <h2 className="text-lg font-bold mb-4 text-slate-800">Media</h2>
@@ -561,6 +313,210 @@ export const CustomerForm = ({ customer, onSubmit, onCancel }) => {
               PNG, JPEG • Max 5MB • 1200 x 600 px
             </p>
           </div>
+        </div>
+      </div>
+      {/* Account Details */}
+      <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100">
+        <h2 className="text-lg font-bold mb-4 text-slate-800">
+          Account Details
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormInput
+            label="Account Name"
+            name="name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            error={errors.name}
+            required
+            placeholder="e.g., MedVita Health Systems"
+          />
+          <FormInput
+            label="Short Name"
+            name="shortName"
+            maxLength="10"
+            value={formData.shortName}
+            onChange={(e) =>
+              setFormData({ ...formData, shortName: e.target.value })
+            }
+            error={errors.shortName}
+            required
+            placeholder="e.g., MVH"
+          />
+        </div>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormInput
+            label="Welcome Message"
+            name="welcomeMessage"
+            maxLength="100"
+            value={formData.welcomeMessage}
+            onChange={(e) =>
+              setFormData({ ...formData, welcomeMessage: e.target.value })
+            }
+            placeholder="e.g., Welcome to MedVita!"
+          />
+          <FormInput
+            label="Tagline"
+            name="tagline"
+            maxLength="100"
+            value={formData.tagline}
+            onChange={(e) =>
+              setFormData({ ...formData, tagline: e.target.value })
+            }
+            placeholder="e.g., Caring for life"
+          />
+        </div>
+      </div>
+
+      {/* Contact Person Details */}
+      <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100">
+        <h2 className="text-lg font-bold mb-4 text-slate-800">
+          Contact Person Details
+        </h2>
+        <div className="space-y-4">
+          <FormInput
+            label="Full Name"
+            name="contactName"
+            value={formData.contactName}
+            onChange={(e) =>
+              setFormData({ ...formData, contactName: e.target.value })
+            }
+            error={errors.contactName}
+            required
+            placeholder="e.g., Sarah Chen"
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <PhoneInput
+              label="Mobile Number"
+              name="contactMobile"
+              value={formData.contactMobile}
+              onChange={(e) =>
+                setFormData({ ...formData, contactMobile: e.target.value })
+              }
+              countryCode={formData.contactMobileCountry}
+              onCountryCodeChange={(code) =>
+                setFormData({ ...formData, contactMobileCountry: code })
+              }
+              error={errors.contactMobile}
+              required
+              placeholder="1234567890"
+            />
+            <FormInput
+              label="Email Address"
+              name="contactEmail"
+              type="email"
+              value={formData.contactEmail}
+              onChange={(e) =>
+                setFormData({ ...formData, contactEmail: e.target.value })
+              }
+              error={errors.contactEmail}
+              required
+              placeholder="e.g., sarah@medvita.com"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Address Details */}
+      <div className="border border-slate-200 rounded-2xl p-6 bg-slate-50/50 space-y-6">
+        <div className="flex items-center gap-2 mb-2">
+          <MapPin className="w-5 h-5 text-primary-600" />
+          <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider">
+            Address
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700 ml-1">
+              Country <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="country"
+              value={formData.country}
+              onChange={handleCountryChange}
+              className={`w-full px-4 py-2.5 bg-white border ${errors.country ? "border-red-300" : "border-slate-300"} rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none`}
+            >
+              <option value="">
+                {countriesList.length === 0
+                  ? "Loading countries..."
+                  : "Select Country"}
+              </option>
+              {countriesList.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700 ml-1">
+              State <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="state"
+              value={formData.state}
+              onChange={handleStateChange}
+              disabled={!formData.country || stateList.length === 0}
+              className={`w-full px-4 py-2.5 bg-white border ${errors.state ? "border-red-300" : "border-slate-300"} rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400`}
+            >
+              <option value="">
+                {formData.country && stateList.length === 0
+                  ? "Loading states..."
+                  : "Select State"}
+              </option>
+              {stateList.map((s) => (
+                <option key={s.id} value={s.name}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700 ml-1">
+              City <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="city"
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              disabled={!formData.state || cityList.length === 0}
+              className={`w-full px-4 py-2.5 bg-white border ${errors.city ? "border-red-300" : "border-slate-300"} rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400`}
+            >
+              <option value="">
+                {formData.state && cityList.length === 0
+                  ? "Loading cities..."
+                  : "Select City"}
+              </option>
+              {cityList.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <FormInput
+            label="Address"
+            name="address"
+            value={formData.address}
+            onChange={(e) =>
+              setFormData({ ...formData, address: e.target.value })
+            }
+            placeholder="Street address, building, apartment..."
+          />
+          <FormInput
+            label="Pincode"
+            name="pincode"
+            value={formData.pincode}
+            onChange={(e) =>
+              setFormData({ ...formData, pincode: e.target.value })
+            }
+            placeholder="ZIP / Pincode"
+          />
         </div>
       </div>
 
