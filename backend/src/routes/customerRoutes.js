@@ -14,18 +14,19 @@ import { requireRole } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
-// All customer routes are Super Admin only — Account/Institution admins
-// cannot see or manage other customers.
-router.use(protect, requireRole('super_admin'));
+router.use(protect);
 
-router.route('/').get(getCustomers).post(createCustomer);
-router
-  .route('/:id')
-  .get(getCustomer)
-  .put(updateCustomer)
-  .delete(deleteCustomer);
-router.patch('/:id/status', toggleCustomerStatus);
-router.put('/:id/report-template', uploadReportTemplate);
-router.get('/:id/report-template', getReportTemplate);
+router.route('/')
+  .get(requireRole('super_admin'), getCustomers)
+  .post(requireRole('super_admin'), createCustomer);
+
+router.route('/:id')
+  .get(requireRole('super_admin', 'account'), getCustomer)
+  .put(requireRole('super_admin', 'account'), updateCustomer)
+  .delete(requireRole('super_admin'), deleteCustomer);
+
+router.patch('/:id/status', requireRole('super_admin'), toggleCustomerStatus);
+router.put('/:id/report-template', requireRole('super_admin', 'account'), uploadReportTemplate);
+router.get('/:id/report-template', requireRole('super_admin', 'account', 'institution', 'doctor', 'health_worker', 'coordinator'), getReportTemplate);
 
 export default router;

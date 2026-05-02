@@ -13,6 +13,11 @@ import {
   MoreHorizontal,
   HeartPulse,
   ClipboardList,
+  Upload,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  FileText,
 } from "lucide-react";
 import {
   LineChart,
@@ -30,8 +35,10 @@ import {
   Legend,
 } from "recharts";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
-import { statsService, userService } from "../services";
+import { statsService, userService, customerService } from "../services";
 import { useAuth } from "../context/AuthContext";
+import { useRef } from "react";
+import { AnimatePresence } from "framer-motion";
 
 const container = {
   hidden: { opacity: 0 },
@@ -60,6 +67,99 @@ export const DashboardPage = () => {
   const [stats, setStats] = useState(null);
   const [recentUsers, setRecentUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Template panel state
+  const [templatePanelOpen, setTemplatePanelOpen] = useState(false);
+  const [templateStatus, setTemplateStatus] = useState(null);
+  const [templateLoading, setTemplateLoading] = useState(false);
+  const [uploadState, setUploadState] = useState("idle");
+  const [uploadError, setUploadError] = useState("");
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const openTemplatePanel = async () => {
+    setTemplatePanelOpen(true);
+    setUploadState("idle");
+    setUploadError("");
+    setTemplateLoading(true);
+    try {
+      const res = await customerService.getById(user.accountId);
+      if (res?.data?.reportTemplate) {
+        setTemplateStatus(res.data.reportTemplate);
+      } else {
+        setTemplateStatus(null);
+      }
+    } catch (err) {
+      console.error("Error fetching account template", err);
+    } finally {
+      setTemplateLoading(false);
+    }
+  };
+
+  const closeTemplatePanel = () => {
+    setTemplatePanelOpen(false);
+    setUploadState("idle");
+    setUploadError("");
+  };
+
+  const processFile = async (file) => {
+    if (!file) return;
+    if (!file.name.endsWith(".html") && !file.name.endsWith(".htm")) {
+      setUploadState("error");
+      setUploadError("Please upload a valid .html file.");
+      return;
+    }
+
+    setUploadState("uploading");
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const htmlContent = event.target.result;
+        const updateData = {
+          reportTemplate: {
+            htmlContent,
+            fileName: file.name,
+            uploadedAt: new Date().toISOString(),
+          },
+        };
+        await customerService.update(user.accountId, updateData);
+        setUploadState("success");
+        setTemplateStatus(updateData.reportTemplate);
+      } catch (err) {
+        console.error("Upload failed", err);
+        setUploadState("error");
+        setUploadError("Upload failed. Please try again.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleFileDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    processFile(e.dataTransfer.files?.[0]);
+  };
+
+  const handleFileInput = (e) => {
+    processFile(e.target.files?.[0]);
+    e.target.value = "";
+  };
+
+  const TOKENS = [
+    "{{protocol_content}}",
+    "{{patient_name}}",
+    "{{patient_mrn}}",
+    "{{patient_age}}",
+    "{{patient_sex}}",
+    "{{visit_date}}",
+    "{{institution_name}}",
+    "{{banner_base64}}",
+    "{{signature_base64}}",
+    "{{generated_by}}",
+    "{{generated_by_role}}",
+    "{{footer_text}}",
+  ];
 
   useEffect(() => {
     fetchDashboardData();
@@ -203,6 +303,15 @@ export const DashboardPage = () => {
             Welcome to your dashboard overview.
           </p>
         </div>
+        {!isSuperAdmin && user?.role === "account" && (
+          <button
+            onClick={openTemplatePanel}
+            className="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl font-bold text-sm transition-colors flex items-center gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Upload Report Template
+          </button>
+        )}
       </motion.div>
 
       {/* KPI Cards */}
@@ -476,6 +585,190 @@ export const DashboardPage = () => {
           </table>
         </div>
       </motion.div>
+
+      {/* ── Report Template Upload Panel ── */}
+      <AnimatePresence>
+        {templatePanelOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+              onClick={closeTemplatePanel}
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 280 }}
+              className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col"
+            >
+              {/* Panel Header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-white">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    Report Template
+                  </h2>
+                </div>
+                <button
+                  onClick={closeTemplatePanel}
+                  className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Panel Body */}
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+                {/* Current Status */}
+                <div className="rounded-xl border border-slate-200 p-4 bg-slate-50">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
+                    Current Template
+                  </p>
+                  {templateLoading ? (
+                    <div className="flex items-center gap-2 text-slate-400 text-sm">
+                      <LoadingSpinner />
+                      <span>Checking...</span>
+                    </div>
+                  ) : templateStatus?.fileName ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">
+                          {templateStatus.fileName}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Uploaded{" "}
+                          {templateStatus.uploadedAt
+                            ? new Date(
+                                templateStatus.uploadedAt,
+                              ).toLocaleDateString("en-GB", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })
+                            : "—"}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                        <AlertCircle className="w-5 h-5 text-amber-500" />
+                      </div>
+                      <p className="text-sm text-slate-600">
+                        No template configured yet. Upload one below.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Token Reference */}
+                <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
+                  <p className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3">
+                    Available Tokens
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {TOKENS.map((token, i) => (
+                      <span
+                        key={i}
+                        className="bg-white border border-indigo-100 text-indigo-700 rounded-lg px-2 py-1.5 text-[11px] font-mono truncate"
+                      >
+                        {token}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-indigo-500 mt-3">
+                    These tokens will be replaced with dynamic data when
+                    generating a report.
+                  </p>
+                </div>
+
+                {/* Upload Zone */}
+                <div>
+                  <p className="text-sm font-bold text-slate-700 mb-3">
+                    Upload HTML Template
+                  </p>
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOver(true);
+                    }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleFileDrop}
+                    onClick={() =>
+                      uploadState !== "uploading" &&
+                      fileInputRef.current?.click()
+                    }
+                    className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all select-none ${
+                      uploadState === "uploading"
+                        ? "border-slate-200 bg-slate-50 cursor-not-allowed"
+                        : dragOver
+                          ? "border-indigo-400 bg-indigo-50 scale-[1.01] cursor-copy"
+                          : uploadState === "success"
+                            ? "border-emerald-300 bg-emerald-50 cursor-pointer"
+                            : uploadState === "error"
+                              ? "border-red-300 bg-red-50 cursor-pointer"
+                              : "border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 cursor-pointer"
+                    }`}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".html,.htm"
+                      onChange={handleFileInput}
+                      className="hidden"
+                    />
+
+                    {uploadState === "uploading" ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <LoadingSpinner />
+                        <p className="text-sm text-slate-500 font-medium">
+                          Uploading template...
+                        </p>
+                      </div>
+                    ) : uploadState === "success" ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                        <p className="text-sm font-bold text-emerald-700">
+                          Template uploaded successfully!
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Click or drop a new file to replace it.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center">
+                          <Upload className="w-6 h-6 text-indigo-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-700">
+                            Drop your HTML file here
+                          </p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            or click to browse · .html files only
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {uploadState === "error" && uploadError && (
+                    <p className="text-sm text-red-600 mt-2 flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      {uploadError}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

@@ -165,7 +165,7 @@ export const InstitutionsPage = () => {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
           {[...Array(8)].map((_, i) => (
             <SkeletonCard key={i} />
           ))}
@@ -178,80 +178,82 @@ export const InstitutionsPage = () => {
         />
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
             {paginatedInstitutions.map((institution, index) => (
               <motion.div
                 key={institution._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="card-premium p-5 space-y-4 group"
+                className="card-premium p-4 space-y-3 group flex flex-col justify-between w-full"
               >
-                <div className="flex items-start justify-between">
-                  <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-2xl">
-                    {institution.logo}
-                  </div>
-                  <StatusToggleSwitch
-                    checked={institution.status === "active"}
-                    onChange={() => handleStatusToggle(institution._id)}
-                  />
-                </div>
-
                 <div>
-                  <h3 className="font-semibold text-slate-900 text-lg mb-1">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-lg font-bold">
+                      {institution.logo}
+                    </div>
+                    <StatusToggleSwitch
+                      checked={institution.status === "active"}
+                      onChange={() => handleStatusToggle(institution._id)}
+                    />
+                  </div>
+
+                  <h3 className="font-semibold text-slate-900 text-base mb-1 truncate">
                     {institution.name}
                   </h3>
-                  <p className="text-sm text-primary-600 font-medium">
+                  <p className="text-xs text-primary-600 font-medium mb-1.5 truncate">
                     {institution.customer?.name}
                   </p>
-                  <div className="space-y-2 text-sm text-slate-600 mt-3">
+                  <div className="space-y-1.5 text-xs text-slate-600">
                     <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
+                      <Mail className="w-3.5 h-3.5" />
                       <span className="truncate">
                         {institution.contactPerson?.email}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
+                      <Phone className="w-3.5 h-3.5" />
                       <span>{institution.contactPerson?.phone}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm">
-                    <UsersIcon className="w-4 h-4 text-primary-600" />
-                    <span className="text-slate-600">
-                      {institution.usersCount || 0} users
+                <div className="pt-3 border-t border-slate-200 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <UsersIcon className="w-3.5 h-3.5 text-primary-600" />
+                      <span className="text-slate-600">
+                        {institution.usersCount || 0} users
+                      </span>
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${
+                        institution.status === "active"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {institution.status}
                     </span>
                   </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      institution.status === "active"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {institution.status?.toUpperCase()}
-                  </span>
-                </div>
 
-                {/* Action buttons */}
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => handleEdit(institution)}
-                    className="flex-1 px-3 py-2 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(institution)}
-                    className="flex-1 px-3 py-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
+                  {/* Action buttons */}
+                  <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex-wrap">
+                    <button
+                      onClick={() => handleEdit(institution)}
+                      className="flex-1 px-2 py-1.5 rounded-md bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors flex items-center justify-center gap-1 text-xs font-medium"
+                    >
+                      <Edit className="w-3 h-3" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(institution)}
+                      className="flex-1 px-2 py-1.5 rounded-md bg-red-50 text-red-700 hover:bg-red-100 transition-colors flex items-center justify-center gap-1 text-xs font-medium"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}

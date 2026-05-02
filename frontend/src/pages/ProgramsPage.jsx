@@ -132,7 +132,7 @@ export const ProgramsPage = () => {
                       navigate(`/programs/${type._id}/names?add=true`);
                     }}
                     className="p-2 rounded-lg bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                    title="Quick Add Program"
+                    title="Add Program"
                   >
                     <Plus className="w-4 h-4" />
                   </button>

@@ -520,19 +520,19 @@ export const CustomerForm = ({ customer, onSubmit, onCancel }) => {
         </div>
       </div>
 
-      <div className="flex gap-3 pt-6 sticky bottom-0 bg-white border-t border-slate-200 mt-6 z-10 py-4 shadow-[0_-10px_10px_-10px_rgba(0,0,0,0.05)]">
+      <div className="flex justify-center gap-4 pt-6 sticky bottom-0 bg-white border-t border-slate-200 mt-6 z-10 py-4 shadow-[0_-10px_10px_-10px_rgba(0,0,0,0.05)]">
         <button
           type="button"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+          className="w-36 px-6 py-3 rounded-[15px] bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-all"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-44 px-8 py-3 rounded-[15px] bg-primary-600 text-white font-bold hover:bg-primary-700 shadow-lg shadow-primary-200 flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
         >
           {isSubmitting
             ? "Saving..."

@@ -55,6 +55,9 @@ export const protect = async (req, res, next) => {
       if (!principal) {
         principal = await User.findById(id).select('-password');
       }
+    } else if (['doctor', 'health_worker', 'coordinator'].includes(role)) {
+      // Clinical portal users
+      principal = await User.findById(id).select('-password');
     }
 
     if (!principal) {

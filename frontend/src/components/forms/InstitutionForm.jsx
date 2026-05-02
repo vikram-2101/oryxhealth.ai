@@ -378,7 +378,9 @@ export const InstitutionForm = ({ institution, onSubmit, onCancel }) => {
                 disabled={loadingAccounts || !!institution}
               >
                 <option value="">
-                  {loadingAccounts ? "Loading accounts..." : "Choose an account"}
+                  {loadingAccounts
+                    ? "Loading accounts..."
+                    : "Choose an account"}
                 </option>
                 {accountOptions.map((a) => (
                   <option key={a.value} value={a.value}>
@@ -399,8 +401,6 @@ export const InstitutionForm = ({ institution, onSubmit, onCancel }) => {
           />
         </div>
       </div>
-
-
 
       {/* Contact Person Details */}
       <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100">
@@ -454,10 +454,13 @@ export const InstitutionForm = ({ institution, onSubmit, onCancel }) => {
       {/* Address Details */}
       <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 space-y-4">
         <div className="flex items-center gap-2 mb-1">
-          <MapPin className="w-5 h-5 text-primary-600" />
-          <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider">
-            Address Details
+          {/* <MapPin className="w-5 h-5 text-primary-600" /> */}
+          <h3 className="text-sm font-bold  uppercase tracking-wider">
+            Address
           </h3>
+          <span className="text-xs text-slate-400 font-normal lowercase tracking-normal">
+            (Optional)
+          </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -515,7 +518,9 @@ export const InstitutionForm = ({ institution, onSubmit, onCancel }) => {
             <select
               name="city"
               value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, city: e.target.value })
+              }
               disabled={!formData.state || cityList.length === 0}
               className={`w-full px-4 py-2.5 bg-white border ${errors.city ? "border-red-300" : "border-slate-300"} rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400`}
             >
@@ -557,9 +562,14 @@ export const InstitutionForm = ({ institution, onSubmit, onCancel }) => {
 
       {/* Billing Details */}
       <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100">
-        <h2 className="text-base font-bold mb-3 text-slate-800">
-          Billing Details Optional
-        </h2>
+        <div className="flex items-center gap-2 mb-2">
+          <h3 className="text-sm font-bold  uppercase tracking-wider">
+            Billing Details
+          </h3>
+          <span className="text-xs text-slate-400 font-normal lowercase tracking-normal">
+            (Optional)
+          </span>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormInput
             label="PAN"
@@ -580,19 +590,19 @@ export const InstitutionForm = ({ institution, onSubmit, onCancel }) => {
         </div>
       </div>
 
-      <div className="flex gap-3 pt-4 sticky bottom-0 bg-white border-t border-slate-200 mt-4 z-10 py-3 shadow-[0_-10px_10px_-10px_rgba(0,0,0,0.05)]">
+      <div className="flex justify-center gap-4 pt-4 sticky bottom-0 bg-white border-t border-slate-200 mt-4 z-10 py-3 shadow-[0_-10px_10px_-10px_rgba(0,0,0,0.05)]">
         <button
           type="button"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+          className="w-36 px-6 py-3 rounded-[15px] bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-all"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSubmitting || loadingAccounts}
-          className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-48 px-8 py-3 rounded-[15px] bg-primary-600 text-white font-bold hover:bg-primary-700 shadow-lg shadow-primary-200 flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
         >
           {isSubmitting
             ? "Saving..."

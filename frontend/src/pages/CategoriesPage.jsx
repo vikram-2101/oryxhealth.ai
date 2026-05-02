@@ -130,11 +130,11 @@ export const CategoriesPage = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(
-                        `/categories/${category._id}/protocols?add=true`,
+                        `/categories/${category.name}/protocols?add=true`,
                       );
                     }}
                     className="p-2 rounded-lg bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                    title="Quick Add Protocol"
+                    title="Add Protocol"
                   >
                     <Plus className="w-4 h-4" />
                   </button>

@@ -72,6 +72,12 @@ const protocolSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "ReportTemplate",
         },
+        reportTemplate: {
+            htmlContent: { type: String, default: null },
+            fileName: { type: String, default: null },
+            uploadedAt: { type: Date, default: null },
+            uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', default: null },
+        },
     },
     { timestamps: true }
 );

@@ -234,7 +234,10 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
       // Concat name for backward compatibility if needed, but we now send firstName/lastName
       Object.keys(formData).forEach((key) => {
         if (key === "phone") {
-          const fullPhone = `${formData.phoneCountry}${formData.phone}`.replace(/\s+/g, "");
+          const fullPhone = `${formData.phoneCountry}${formData.phone}`.replace(
+            /\s+/g,
+            "",
+          );
           formDataToSend.append("phone", fullPhone);
         } else if (key === "phoneCountry") {
           // skip
@@ -491,21 +494,10 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
         <div
           className={`grid grid-cols-1 ${isSuperAdmin ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4 items-end`}
         >
-          <FormSelect
-            label="Professional Role"
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            options={ROLE_OPTIONS}
-            error={errors.role}
-            required
-            placeholder="Select Role"
-          />
-
           {isSuperAdmin ? (
             <div className="space-y-1">
               <label className="block text-sm font-medium text-slate-700">
-                Account / Customer
+                Account
               </label>
               <select
                 name="accountId"
@@ -548,6 +540,55 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
             }
             disabled={!formData.accountId}
           />
+
+          <FormSelect
+            label="Professional Role"
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            options={ROLE_OPTIONS}
+            error={errors.role}
+            required
+            placeholder="Select Role"
+          />
+        </div>
+
+        {/* Admin Portal Access inside User Role Details */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-4 pt-4 border-t border-slate-100">
+          <div className="flex flex-col">
+            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">
+              Admin Portal Access
+            </h4>
+            <p className="text-[10px] text-slate-400 italic">
+              Determines if this user can login to the OryxT admin Portal.
+            </p>
+          </div>
+          <div className="flex-1 max-w-md">
+            <div className="flex p-1 bg-slate-100 rounded-[12px] w-full border border-slate-200 shadow-inner h-[46px]">
+              {[
+                { value: "none", label: "None" },
+                { value: "account", label: "Account Admin" },
+                { value: "institution", label: "Institution Admin" },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() =>
+                    handleChange({
+                      target: { name: "admin", value: option.value },
+                    })
+                  }
+                  className={`flex-1 rounded-[10px] text-xs font-semibold transition-all duration-300 ${
+                    formData.admin === option.value
+                      ? "bg-primary-600 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Conditional Doctor Fields */}
@@ -644,44 +685,6 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
         </AnimatePresence>
       </div>
 
-      {/* Section 4: Admin Access */}
-      <div className="bg-white rounded-[15px] p-5 shadow-sm border border-slate-200 space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider whitespace-nowrap">
-            Admin Portal Access
-          </h3>
-          <div className="flex-1 max-w-md">
-            <div className="flex p-1 bg-slate-100 rounded-[12px] w-full border border-slate-200 shadow-inner h-[50px]">
-              {[
-                { value: "none", label: "None" },
-                { value: "account", label: "Account Admin" },
-                { value: "institution", label: "Institution Admin" },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() =>
-                    handleChange({
-                      target: { name: "admin", value: option.value },
-                    })
-                  }
-                  className={`flex-1 rounded-[10px] text-xs font-semibold transition-all duration-300 ${
-                    formData.admin === option.value
-                      ? "bg-primary-600 text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-        <p className="text-[10px] text-slate-400 italic px-2">
-          Determines if this user can login to the OryxT admin Portal.
-        </p>
-      </div>
-
       {/* Section 5: Login Details */}
       <div className="bg-white rounded-[15px] p-5 shadow-sm border border-slate-200 space-y-4">
         <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-1">
@@ -726,7 +729,10 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
       {/* Section 6: Address Information */}
       <div className="bg-white rounded-[15px] p-5 shadow-sm border border-slate-200 space-y-4">
         <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-1">
-          Address Information
+          Address{" "}
+          <span className="text-xs text-slate-400 font-normal lowercase tracking-normal">
+            (Optional)
+          </span>
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-1">
@@ -824,18 +830,18 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-4 pt-4 border-t border-slate-100">
+      <div className="flex justify-center gap-4 pt-4 border-t border-slate-100">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 px-6 py-3 rounded-[15px] bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-all"
+          className="w-36 px-6 py-3 rounded-[15px] bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-all"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex-[2] px-8 py-3 rounded-[15px] bg-primary-600 text-white font-bold hover:bg-primary-700 shadow-lg shadow-primary-200 flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
+          className="w-40 px-8 py-3 rounded-[15px] bg-primary-600 text-white font-bold hover:bg-primary-700 shadow-lg shadow-primary-200 flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
         >
           {isSubmitting ? "Saving..." : user ? "Update User" : "Create User"}
         </button>

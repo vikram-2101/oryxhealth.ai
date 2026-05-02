@@ -62,6 +62,11 @@ export const getCustomers = async (req, res, next) => {
 // @access  Private
 export const getCustomer = async (req, res, next) => {
   try {
+    if (req.userRole === 'account' && req.accountId !== req.params.id) {
+      res.status(403);
+      throw new Error('Access denied. You can only access your own account data.');
+    }
+
     const customer = await Customer.findById(req.params.id);
 
     if (!customer) {
@@ -107,6 +112,11 @@ export const createCustomer = async (req, res, next) => {
 // @access  Private
 export const updateCustomer = async (req, res, next) => {
   try {
+    if (req.userRole === 'account' && req.accountId !== req.params.id) {
+      res.status(403);
+      throw new Error('Access denied. You can only modify your own account data.');
+    }
+
     const customer = await Customer.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -196,6 +206,11 @@ export const toggleCustomerStatus = async (req, res, next) => {
 // @access  Private (Super Admin)
 export const uploadReportTemplate = async (req, res, next) => {
   try {
+    if (req.userRole === 'account' && req.accountId !== req.params.id) {
+      res.status(403);
+      throw new Error('Access denied. You can only modify your own account template.');
+    }
+
     const { htmlContent, fileName } = req.body;
 
     if (!htmlContent) {
@@ -239,6 +254,14 @@ export const uploadReportTemplate = async (req, res, next) => {
 // @access  Private
 export const getReportTemplate = async (req, res, next) => {
   try {
+    if (
+      ['account', 'doctor', 'health_worker', 'coordinator'].includes(req.userRole) && 
+      req.accountId !== req.params.id
+    ) {
+      res.status(403);
+      throw new Error('Access denied. You can only access your own account template.');
+    }
+
     const customer = await Customer.findById(req.params.id).select('reportTemplate name');
 
     if (!customer) {

@@ -1,35 +1,42 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Stethoscope, HeartHandshake, UserCog, Edit, Trash2 } from 'lucide-react';
-import { userService, institutionService } from '../services';
-import { SearchBar } from '../components/ui/SearchBar';
-import { Pagination } from '../components/ui/Pagination';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { EmptyState } from '../components/ui/EmptyState';
-import { StatusToggleSwitch } from '../components/ui/StatusToggleSwitch';
-import { FormModal } from '../components/ui/FormModal';
-import { ConfirmDialog } from '../components/ui/ConfirmDialog';
-import { UserForm } from '../components/forms/UserForm';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  Plus,
+  Stethoscope,
+  HeartHandshake,
+  UserCog,
+  Edit,
+  Trash2,
+} from "lucide-react";
+import { userService, institutionService } from "../services";
+import { SearchBar } from "../components/ui/SearchBar";
+import { Pagination } from "../components/ui/Pagination";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { EmptyState } from "../components/ui/EmptyState";
+import { StatusToggleSwitch } from "../components/ui/StatusToggleSwitch";
+import { FormModal } from "../components/ui/FormModal";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { UserForm } from "../components/forms/UserForm";
 
 const roleIcons = {
   Doctor: Stethoscope,
-  'Health Worker': HeartHandshake,
+  "Health Worker": HeartHandshake,
   Coordinator: UserCog,
 };
 
 const roleColors = {
-  Doctor: 'bg-primary-100 text-primary-700',
-  'Health Worker': 'bg-emerald-100 text-emerald-700',
-  Coordinator: 'bg-amber-100 text-amber-700',
+  Doctor: "bg-primary-100 text-primary-700",
+  "Health Worker": "bg-emerald-100 text-emerald-700",
+  Coordinator: "bg-amber-100 text-amber-700",
 };
 
 export const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [institutions, setInstitutions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [selectedRole, setSelectedRole] = useState('');
-  const [selectedInstitution, setSelectedInstitution] = useState('');
+  const [search, setSearch] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
+  const [selectedInstitution, setSelectedInstitution] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -48,9 +55,11 @@ export const UsersPage = () => {
         institutionService.getAll(),
       ]);
       setUsers(usersRes.data.users || usersRes.data);
-      setInstitutions(institutionsRes.data.institutions || institutionsRes.data);
+      setInstitutions(
+        institutionsRes.data.institutions || institutionsRes.data,
+      );
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -76,7 +85,7 @@ export const UsersPage = () => {
       setIsFormOpen(false);
       fetchData();
     } catch (error) {
-      console.error('Error saving user:', error);
+      console.error("Error saving user:", error);
       throw error;
     }
   };
@@ -86,7 +95,7 @@ export const UsersPage = () => {
       await userService.delete(id);
       fetchData();
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error("Error deleting user:", error);
     }
   };
 
@@ -95,12 +104,13 @@ export const UsersPage = () => {
       await userService.toggleStatus(id);
       fetchData();
     } catch (error) {
-      console.error('Error toggling status:', error);
+      console.error("Error toggling status:", error);
     }
   };
 
   const filteredUsers = users.filter((user) => {
-    const fullName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    const fullName =
+      user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim();
     const matchesSearch =
       fullName.toLowerCase().includes(search.toLowerCase()) ||
       user.email.toLowerCase().includes(search.toLowerCase());
@@ -113,17 +123,17 @@ export const UsersPage = () => {
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   const getInitials = (user) => {
     if (user.firstName && user.lastName) {
       return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
     }
-    return (user.name || 'U')
-      .split(' ')
+    return (user.name || "U")
+      .split(" ")
       .map((n) => n[0])
-      .join('')
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -133,9 +143,14 @@ export const UsersPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Users</h1>
-          <p className="text-slate-600 mt-1">{users?.length || 0} registered users</p>
+          <p className="text-slate-600 mt-1">
+            {users?.length || 0} registered users
+          </p>
         </div>
-        <button onClick={handleAdd} className="btn-primary flex items-center gap-2">
+        <button
+          onClick={handleAdd}
+          className="btn-primary flex items-center gap-2"
+        >
           <Plus className="w-5 h-5" />
           Add User
         </button>
@@ -143,7 +158,11 @@ export const UsersPage = () => {
 
       <div className="flex gap-4 flex-wrap">
         <div className="flex-1 min-w-[200px]">
-          <SearchBar value={search} onChange={setSearch} placeholder="Search users..." />
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder="Search users..."
+          />
         </div>
         <select
           value={selectedRole}
@@ -223,14 +242,22 @@ export const UsersPage = () => {
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center font-bold text-primary-700 overflow-hidden shadow-sm border border-slate-200">
                               {user.photo ? (
-                                <img src={user.photo} alt={user.name} className="w-full h-full object-cover" />
+                                <img
+                                  src={user.photo}
+                                  alt={user.name}
+                                  className="w-full h-full object-cover"
+                                />
                               ) : (
                                 getInitials(user)
                               )}
                             </div>
                             <div>
-                              <div className="font-medium text-slate-900">{user.name}</div>
-                              <div className="text-sm text-slate-500">{user.email}</div>
+                              <div className="font-medium text-slate-900">
+                                {user.name}
+                              </div>
+                              <div className="text-sm text-slate-500">
+                                {user.email}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -247,14 +274,18 @@ export const UsersPage = () => {
                         <td className="px-6 py-4 text-sm text-slate-600">
                           {user.institution?.name}
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-600">{user.phone}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600">
+                          {user.phone}
+                        </td>
                         <td className="px-6 py-4 text-sm text-slate-600 font-mono">
-                          {user.role === 'Doctor' ? user.registrationNumber || '—' : '—'}
+                          {user.role === "Doctor"
+                            ? user.registrationNumber || "—"
+                            : "—"}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex justify-center">
                             <StatusToggleSwitch
-                              checked={user.status === 'active'}
+                              checked={user.status === "active"}
                               onChange={() => handleStatusToggle(user._id)}
                             />
                           </div>
@@ -299,7 +330,7 @@ export const UsersPage = () => {
       <FormModal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
-        title={selectedUser ? 'Edit User' : 'Add New User'}
+        title={selectedUser ? "Edit User" : "Add  User"}
         size="lg"
       >
         <UserForm

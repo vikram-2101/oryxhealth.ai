@@ -57,10 +57,10 @@ export const ProtocolSchemaPage = () => {
     try {
       setSaving(true);
       await protocolService.update(protocolId, protocol);
-      toast.success("Form structure saved successfully");
+      toast.success("Schema structure saved successfully");
     } catch (error) {
       console.error("Error saving protocol:", error);
-      toast.error("Failed to save form structure");
+      toast.error("Failed to save Schema structure");
     } finally {
       setSaving(false);
     }
@@ -100,12 +100,13 @@ export const ProtocolSchemaPage = () => {
     const fields = newStructure[stepIndex].fields;
     const nextFieldNum = fields.length + 1;
 
-    // Logic: If the previous field was a heading or has a parent, 
+    // Logic: If the previous field was a heading or has a parent,
     // suggest the same parent for the new field.
     let suggestedParent = null;
     if (fields.length > 0) {
       const lastField = fields[fields.length - 1];
-      suggestedParent = lastField.type === "heading" ? lastField.fieldKey : lastField.parentKey;
+      suggestedParent =
+        lastField.type === "heading" ? lastField.fieldKey : lastField.parentKey;
     }
 
     fields.push({
@@ -123,7 +124,7 @@ export const ProtocolSchemaPage = () => {
   const handleToggleIndent = (stepIndex, fieldIndex) => {
     const newStructure = [...protocol.formStructure];
     const field = newStructure[stepIndex].fields[fieldIndex];
-    
+
     if (field.parentKey) {
       field.parentKey = null;
     } else if (fieldIndex > 0) {
@@ -211,7 +212,7 @@ export const ProtocolSchemaPage = () => {
             <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
                 <Layout className="w-4 h-4 text-primary-600" />
-                Form Steps
+                Protocol Steps
               </h3>
               <button
                 onClick={handleAddStep}
@@ -345,8 +346,8 @@ export const ProtocolSchemaPage = () => {
                             field.type === "heading"
                               ? "border-primary-200 bg-primary-50/40 col-span-12"
                               : field.parentKey
-                              ? "border-slate-100 bg-white ml-10"
-                              : "border-slate-100 bg-white"
+                                ? "border-slate-100 bg-white ml-10"
+                                : "border-slate-100 bg-white"
                           }`}
                         >
                           {/* Label/Heading Input */}
@@ -481,7 +482,9 @@ export const ProtocolSchemaPage = () => {
                             )}
 
                             <button
-                              onClick={() => handleRemoveField(activeStep, fIdx)}
+                              onClick={() =>
+                                handleRemoveField(activeStep, fIdx)
+                              }
                               className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all ml-auto"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -626,10 +629,18 @@ export const ProtocolSchemaPage = () => {
               <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">
-                    {protocol.formStructure[showOptionsModal.stepIndex].fields[showOptionsModal.fieldIndex].type === 'radio' ? 'Manage Options' : 'Manage Table Rows'}
+                    {protocol.formStructure[showOptionsModal.stepIndex].fields[
+                      showOptionsModal.fieldIndex
+                    ].type === "radio"
+                      ? "Manage Options"
+                      : "Manage Table Rows"}
                   </h3>
                   <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    {protocol.formStructure[showOptionsModal.stepIndex].fields[showOptionsModal.fieldIndex].type === 'radio' ? 'Configure radio button choices' : 'Define test names for this table'}
+                    {protocol.formStructure[showOptionsModal.stepIndex].fields[
+                      showOptionsModal.fieldIndex
+                    ].type === "radio"
+                      ? "Configure radio button choices"
+                      : "Define test names for this table"}
                   </p>
                 </div>
                 <button
@@ -643,12 +654,21 @@ export const ProtocolSchemaPage = () => {
               <div className="p-6 space-y-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
-                    {protocol.formStructure[showOptionsModal.stepIndex].fields[showOptionsModal.fieldIndex].type === 'radio' ? 'Add New Option' : 'Add New Test Row'}
+                    {protocol.formStructure[showOptionsModal.stepIndex].fields[
+                      showOptionsModal.fieldIndex
+                    ].type === "radio"
+                      ? "Add New Option"
+                      : "Add New Test Row"}
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder={protocol.formStructure[showOptionsModal.stepIndex].fields[showOptionsModal.fieldIndex].type === 'radio' ? "Enter option label..." : "e.g. OAE Test, ABR Test..."}
+                      placeholder={
+                        protocol.formStructure[showOptionsModal.stepIndex]
+                          .fields[showOptionsModal.fieldIndex].type === "radio"
+                          ? "Enter option label..."
+                          : "e.g. OAE Test, ABR Test..."
+                      }
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && e.target.value.trim()) {
                           const currentOptions =
@@ -692,7 +712,12 @@ export const ProtocolSchemaPage = () => {
 
                 <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
-                    {protocol.formStructure[showOptionsModal.stepIndex].fields[showOptionsModal.fieldIndex].type === 'radio' ? 'Current Options' : 'Defined Test Rows'} (
+                    {protocol.formStructure[showOptionsModal.stepIndex].fields[
+                      showOptionsModal.fieldIndex
+                    ].type === "radio"
+                      ? "Current Options"
+                      : "Defined Test Rows"}{" "}
+                    (
                     {
                       (
                         protocol.formStructure[showOptionsModal.stepIndex]
