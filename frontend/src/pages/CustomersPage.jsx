@@ -307,9 +307,10 @@ export const CustomersPage = () => {
                     </button>
                     <button
                       onClick={() => openTemplatePanel(customer)}
-                      className="flex-1 px-2 py-1.5 rounded-md bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors flex items-center justify-center gap-1 text-xs font-medium"
+                      title="Protocol Template Configuration"
+                      className="px-2 py-1.5 rounded-md bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors flex items-center justify-center text-xs font-medium"
                     >
-                      <FileText className="w-3 h-3" /> Template
+                      <FileText className="w-3 h-3" />
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(customer)}

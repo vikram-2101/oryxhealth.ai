@@ -151,7 +151,7 @@ export const ProtocolsPage = () => {
           className="btn-primary flex items-center gap-2 px-6 shadow-primary-200/50"
         >
           <Plus className="w-5 h-5" />
-          <span>Add New Protocol</span>
+          <span>Add Protocol</span>
         </button>
       </div>
 
@@ -235,8 +235,7 @@ export const ProtocolsPage = () => {
                             {protocol.name}
                           </div>
                           <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            ID: {protocol._id.slice(-8).toUpperCase()} • V
-                            {protocol.version || 1}
+                            ID: {protocol._id.slice(-8).toUpperCase()}
                           </div>
                         </div>
                       </div>
@@ -293,25 +292,25 @@ export const ProtocolsPage = () => {
                         <button
                           onClick={() =>
                             navigate(
-                              `/categories/${categoryId}/protocols/${protocol._id}/schema`,
+                              `/categories/${categoryId}/protocols/${protocol._id}/protocol-schema-configuration`,
                             )
                           }
                           className="p-2 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-all border border-transparent hover:border-primary-100"
-                          title="View Schema"
+                          title="Configure Protocol Schema"
                         >
                           <Layout className="w-4 h-4" />
                         </button>
-                        <button
+                        {/* <button
                           onClick={() =>
                             navigate(
                               `/categories/${categoryId}/protocols/${protocol._id}/report-template`,
                             )
                           }
                           className="p-2 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all border border-transparent hover:border-indigo-100"
-                          title="View Report Template"
+                          title="View Report Template Builder"
                         >
                           <FileText className="w-4 h-4" />
-                        </button>
+                        </button> */}
                         <button
                           onClick={() => setStatusToggleConfirm(protocol)}
                           className={`p-2 rounded-lg transition-all border border-transparent ${
@@ -378,7 +377,9 @@ export const ProtocolsPage = () => {
             ? "Deactivate Protocol"
             : "Activate Protocol"
         }
-        message={`Are you sure you want to ${statusToggleConfirm?.isActive ? "deactivate" : "activate"} "${statusToggleConfirm?.name}"?`}
+        message={`Are you sure you want to ${
+          statusToggleConfirm?.isActive ? "deactivate" : "activate"
+        } "${statusToggleConfirm?.name}"?`}
       />
     </div>
   );

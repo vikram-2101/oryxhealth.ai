@@ -83,6 +83,7 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
   const [files, setFiles] = useState({ photo: null, signatureImage: null });
   const [loadingLists, setLoadingLists] = useState(true);
   const [submitError, setSubmitError] = useState("");
+  const [isInstAccessOpen, setIsInstAccessOpen] = useState(false);
 
   useEffect(() => {
     fetchLists();
@@ -491,37 +492,36 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
         <h3 className="text-sm font-bold text-primary-600 uppercase tracking-wider mb-1">
           User Role Details
         </h3>
-        <div
-          className={`grid grid-cols-1 ${isSuperAdmin ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4 items-end`}
-        >
-          {isSuperAdmin ? (
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">
-                Account
-              </label>
-              <select
-                name="accountId"
-                value={formData.accountId}
-                onChange={handleChange}
-                className={`w-full h-[46px] px-4 py-2.5 rounded-xl border transition-all ${
-                  errors.accountId
-                    ? "border-red-300 focus:border-red-500"
-                    : "border-slate-300 focus:border-primary-500"
-                } focus:outline-none text-sm`}
-              >
-                <option value="">Select Account</option>
-                {customers.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              {errors.accountId && (
-                <p className="text-xs text-red-600">{errors.accountId}</p>
-              )}
-            </div>
-          ) : null}
 
+        {isSuperAdmin ? (
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700">
+              Account
+            </label>
+            <select
+              name="accountId"
+              value={formData.accountId}
+              onChange={handleChange}
+              className={`w-full h-[46px] px-4 py-2.5 rounded-xl border transition-all ${
+                errors.accountId
+                  ? "border-red-300 focus:border-red-500"
+                  : "border-slate-300 focus:border-primary-500"
+              } focus:outline-none text-sm`}
+            >
+              <option value="">Select Account</option>
+              {customers.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            {errors.accountId && (
+              <p className="text-xs text-red-600">{errors.accountId}</p>
+            )}
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <FormSelect
             label="Primary Institution"
             name="institution"
@@ -541,29 +541,111 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
             disabled={!formData.accountId}
           />
 
-          <FormSelect
-            label="Professional Role"
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            options={ROLE_OPTIONS}
-            error={errors.role}
-            required
-            placeholder="Select Role"
-          />
+          <div className="space-y-1 relative">
+            <label className="block text-sm font-medium text-slate-700">
+              Additional Institution Access
+            </label>
+            <button
+              type="button"
+              disabled={!formData.institution}
+              onClick={() => setIsInstAccessOpen(!isInstAccessOpen)}
+              className={`w-full h-[46px] px-4 py-2.5 rounded-xl border transition-all text-left flex items-center justify-between ${
+                isInstAccessOpen
+                  ? "border-primary-500 ring-4 ring-primary-500/20"
+                  : "border-slate-300"
+              } bg-white disabled:bg-slate-100 disabled:cursor-not-allowed focus:outline-none`}
+            >
+              <span className="text-sm text-slate-700 truncate select-none">
+                {formData.institutionAccess.length > 0
+                  ? `${formData.institutionAccess.length} selected`
+                  : "Select Institutions"}
+              </span>
+              <svg
+                className={`w-4 h-4 text-slate-400 transition-transform ${isInstAccessOpen ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <AnimatePresence>
+              {isInstAccessOpen && formData.institution && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setIsInstAccessOpen(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto p-2 space-y-1"
+                  >
+                    {filteredInstitutions
+                      .filter((i) => i._id !== formData.institution)
+                      .map((inst) => {
+                        const isChecked = formData.institutionAccess.includes(inst._id);
+                        return (
+                          <label
+                            key={inst._id}
+                            className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer select-none"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                const access = isChecked
+                                  ? formData.institutionAccess.filter((id) => id !== inst._id)
+                                  : [...formData.institutionAccess, inst._id];
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  institutionAccess: access,
+                                }));
+                              }}
+                              className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                            />
+                            <span className="text-sm font-medium text-slate-600">
+                              {inst.name}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    {filteredInstitutions.filter((i) => i._id !== formData.institution).length === 0 && (
+                      <p className="text-xs text-slate-400 text-center py-2 italic">
+                        No other institutions available
+                      </p>
+                    )}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
-        {/* Admin Portal Access inside User Role Details */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-4 pt-4 border-t border-slate-100">
-          <div className="flex flex-col">
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">
-              Admin Portal Access
-            </h4>
-            <p className="text-[10px] text-slate-400 italic">
-              Determines if this user can login to the OryxT admin Portal.
-            </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end mt-4 pt-4 border-t border-slate-100">
+          <div>
+            <FormSelect
+              label="Professional Role"
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              options={ROLE_OPTIONS}
+              error={errors.role}
+              required
+              placeholder="Select Role"
+            />
           </div>
-          <div className="flex-1 max-w-md">
+
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">
+                Admin Portal Access
+              </h4>
+              <p className="text-[10px] text-slate-400 italic">
+                Determines if this user can login to the OryxT admin Portal.
+              </p>
+            </div>
             <div className="flex p-1 bg-slate-100 rounded-[12px] w-full border border-slate-200 shadow-inner h-[46px]">
               {[
                 { value: "none", label: "None" },
@@ -627,59 +709,6 @@ export const UserForm = ({ user, onSubmit, onCancel }) => {
                 required
                 placeholder="e.g. Cardiologist"
               />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Additional Access */}
-        <AnimatePresence>
-          {formData.institution && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="space-y-3 pt-2 border-t border-slate-100"
-            >
-              <label className="block text-sm font-bold text-slate-700 uppercase tracking-wider">
-                Additional Institution Access
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-4 border border-slate-200 rounded-2xl bg-slate-50/50 shadow-inner">
-                {filteredInstitutions
-                  .filter((i) => i._id !== formData.institution)
-                  .map((inst) => (
-                    <label
-                      key={inst._id}
-                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-slate-200 group"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.institutionAccess.includes(inst._id)}
-                        onChange={() => {
-                          const access = formData.institutionAccess.includes(
-                            inst._id,
-                          )
-                            ? formData.institutionAccess.filter(
-                                (id) => id !== inst._id,
-                              )
-                            : [...formData.institutionAccess, inst._id];
-                          setFormData((prev) => ({
-                            ...prev,
-                            institutionAccess: access,
-                          }));
-                        }}
-                        className="w-5 h-5 rounded-lg border-slate-300 text-primary-600 focus:ring-primary-500"
-                      />
-                      <span className="text-sm font-medium text-slate-600 group-hover:text-primary-700">
-                        {inst.name}
-                      </span>
-                    </label>
-                  ))}
-                {filteredInstitutions.length <= 1 && (
-                  <p className="text-sm text-slate-400 col-span-2 text-center py-4 italic">
-                    No other institutions available for this account
-                  </p>
-                )}
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
